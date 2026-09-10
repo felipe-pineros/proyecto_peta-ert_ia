@@ -111,7 +111,7 @@
   /* ---------- Hero ---------- */
   /* Hero is deliberately NOT inside .wrap: the banner spans the full
      viewport width, and .hero-copy carries its own gutter instead. */
-  .hero{padding:32px 0 44px; background:var(--bg); overflow:hidden;}
+  .hero{padding:0 0 44px; background:var(--bg); overflow:hidden;}
   .hero-inner{display:flex; flex-direction:column-reverse; gap:28px; width:100%;}
   .hero-copy{padding:0 20px;}
   .eyebrow-tag{
@@ -173,18 +173,18 @@
   }
 
   @media (min-width:640px){
-    .hero{padding:48px 0 64px;}
+    .hero{padding:0 0 64px;}
     .hero-copy{padding:0 32px;}
     h1{font-size:2.5rem;}
     .hero p.lead{font-size:1.05rem; max-width:520px;}
   }
 
   @media (min-width:880px){
-    .hero{padding:72px 0 96px;}
+    .hero{padding:0 0 96px;}
     .hero-inner{
       display:grid; grid-template-columns:minmax(360px, 620px) 1fr; gap:8px; align-items:center;
     }
-    .hero-copy{padding:0 40px 0 clamp(32px, 4vw, 64px);}
+    .hero-copy{padding:32px 40px 0 clamp(32px, 4vw, 64px);}
     h1{font-size:3.1rem; margin-bottom:22px; max-width:580px;}
     .eyebrow-tag{margin-bottom:22px;}
     .hero p.lead{margin-bottom:34px; max-width:460px;}
