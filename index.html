@@ -213,27 +213,43 @@
   .problema{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
   .problema-grid{display:grid; grid-template-columns:1fr; gap:32px;}
   .stat-block{
-    background:var(--bg); border-radius:24px; padding:28px;
-    border:1px solid var(--line);
+    position:relative; overflow:hidden; isolation:isolate;
+    background:linear-gradient(155deg, var(--teal-dark) 0%, var(--teal-dark-deep) 100%);
+    border-radius:24px; padding:32px;
+    box-shadow:0 22px 44px -12px rgba(15,74,94,0.45);
+  }
+  .stat-block .paw-mark{
+    position:absolute; z-index:-1; right:-18px; bottom:-22px;
+    width:150px; height:150px; opacity:0.1; color:var(--white);
   }
   .stat-block .big{font-size:2.6rem; font-weight:800; color:var(--coral); line-height:1;}
-  .stat-block .small{color:var(--ink-soft); font-size:0.92rem; margin-top:10px; max-width:320px;}
-  .problema-list{display:flex; flex-direction:column; gap:20px;}
-  .problema-item{display:flex; gap:14px; align-items:flex-start;}
+  .stat-block .small{color:rgba(255,255,255,0.82); font-size:0.92rem; margin-top:12px; max-width:320px;}
+  .problema-list{display:flex; flex-direction:column; gap:14px;}
+  .problema-item{
+    display:flex; gap:14px; align-items:flex-start;
+    background:var(--bg); border:1px solid var(--line); border-radius:16px; padding:16px;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .problema-item:hover{
+    transform:translateY(-3px); border-color:transparent;
+    box-shadow:0 16px 32px -10px rgba(18,50,64,0.18);
+  }
   .problema-item .icn{
     width:40px; height:40px; border-radius:12px; flex-shrink:0;
-    background:rgba(21,94,117,0.08); display:flex; align-items:center; justify-content:center;
+    background:var(--teal-dark); display:flex; align-items:center; justify-content:center;
   }
-  .problema-item .icn svg{width:20px; height:20px; color:var(--teal-dark);}
+  .problema-item .icn svg{width:20px; height:20px; color:var(--white);}
   .problema-item h3{font-size:1rem; font-weight:600; margin-bottom:4px; color:var(--ink);}
   .problema-item p{color:var(--ink-soft); font-size:0.92rem;}
 
   @media (min-width:880px){
     .problema-grid{grid-template-columns:0.9fr 1.1fr; gap:64px; align-items:center;}
-    .stat-block{border-radius:28px; padding:38px;}
+    .stat-block{border-radius:28px; padding:40px;}
+    .stat-block .paw-mark{width:190px; height:190px; right:-24px; bottom:-28px;}
     .stat-block .big{font-size:3.4rem;}
     .stat-block .small{font-size:0.95rem; max-width:260px;}
-    .problema-list{gap:22px;}
+    .problema-list{gap:16px;}
+    .problema-item{padding:20px;}
     .problema-item .icn{width:42px; height:42px;}
     .problema-item .icn svg{width:22px; height:22px;}
     .problema-item h3{font-size:1.05rem;}
@@ -242,37 +258,42 @@
 
   /* ---------- Flow / how it works ---------- */
   .flujo-track{position:relative;}
-  .flujo-line{display:none;}
   .flujo-steps{
     position:relative; z-index:1;
-    display:grid; grid-template-columns:1fr; gap:24px;
+    display:grid; grid-template-columns:1fr; gap:20px;
   }
-  .paso{display:flex; flex-direction:column; gap:12px;}
+  .paso{
+    display:flex; flex-direction:column; gap:12px;
+    background:var(--white); border:1px solid var(--line); border-radius:18px;
+    padding:24px 22px; position:relative;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .paso:hover{
+    transform:translateY(-4px); border-color:transparent;
+    box-shadow:0 20px 36px -14px rgba(18,50,64,0.2);
+  }
   .paso-num{
-    width:48px; height:48px; border-radius:50%;
-    background:var(--white); border:2px solid var(--teal-dark);
-    color:var(--teal-dark); font-weight:700; font-size:1.05rem;
+    width:44px; height:44px; border-radius:50%;
+    background:var(--teal-dark); color:var(--white);
+    font-weight:800; font-size:1.05rem;
     display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 18px -6px rgba(21,94,117,0.55);
   }
-  .paso:nth-child(2) .paso-num{border-color:var(--teal); color:var(--teal);}
-  .paso:nth-child(3) .paso-num{border-color:var(--yellow); color:#8a6a1a;}
-  .paso:nth-child(4) .paso-num{border-color:var(--coral); color:var(--coral);}
-  .paso:nth-child(5) .paso-num{border-color:var(--teal-dark-deep); color:var(--teal-dark-deep);}
-  .paso h3{font-size:0.98rem; font-weight:600; margin-bottom:5px;}
+  .paso:nth-child(2) .paso-num{background:var(--teal); box-shadow:0 10px 18px -6px rgba(42,157,143,0.5);}
+  .paso:nth-child(3) .paso-num{background:var(--yellow); color:#7a5c14; box-shadow:0 10px 18px -6px rgba(244,201,93,0.55);}
+  .paso:nth-child(4) .paso-num{background:var(--coral); box-shadow:0 10px 18px -6px rgba(231,111,81,0.5);}
+  .paso:nth-child(5) .paso-num{background:var(--teal-dark-deep); box-shadow:0 10px 18px -6px rgba(15,74,94,0.55);}
+  .paso h3{font-size:0.98rem; font-weight:700; margin-bottom:5px;}
   .paso p{font-size:0.88rem; color:var(--ink-soft);}
 
   @media (min-width:640px){
-    .flujo-steps{grid-template-columns:repeat(2,1fr); gap:28px 20px;}
+    .flujo-steps{grid-template-columns:repeat(2,1fr); gap:20px;}
   }
 
   @media (min-width:880px){
-    .flujo-line{
-      display:block; position:absolute; top:26px; left:26px; right:26px; height:2px;
-      background:repeating-linear-gradient(90deg, var(--line) 0 8px, transparent 8px 16px);
-      z-index:0;
-    }
-    .flujo-steps{grid-template-columns:repeat(5,1fr); gap:20px;}
-    .paso-num{width:52px; height:52px; font-size:1.1rem;}
+    .flujo-steps{grid-template-columns:repeat(5,1fr); gap:18px;}
+    .paso{padding:26px 20px;}
+    .paso-num{width:48px; height:48px; font-size:1.1rem;}
     .paso h3{font-size:1rem;}
   }
 
@@ -280,21 +301,67 @@
   .equipo{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
   .equipo-grid{display:grid; grid-template-columns:1fr; gap:20px;}
   .persona{
-    background:var(--bg); border-radius:22px; padding:26px 22px;
-    border:1px solid var(--line);
+    height:500px; perspective:1600px; cursor:pointer;
+    border-radius:22px; outline-offset:4px;
   }
+  .persona-card{
+    position:relative; width:100%; height:100%;
+    transition:transform .65s cubic-bezier(.4,.15,.2,1);
+    transform-style:preserve-3d;
+  }
+  .persona.is-flipped .persona-card{transform:rotateY(180deg);}
+  .persona-face{
+    position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    background:var(--bg); border-radius:22px; border:1px solid var(--line);
+    padding:26px 22px; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .persona-back{transform:rotateY(180deg); overflow-y:auto; justify-content:center;}
+  .persona-back .flip-hint{margin-top:22px;}
   .avatar{
-    width:56px; height:56px; border-radius:50%;
+    width:56px; height:56px; border-radius:50%; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
     color:var(--white); font-weight:700; font-size:1.1rem;
-    margin-bottom:16px;
+    margin-bottom:16px; overflow:hidden;
   }
+  .avatar img{width:100%; height:100%; object-fit:cover; border-radius:50%;}
   .persona:nth-child(1) .avatar{background:var(--teal-dark);}
   .persona:nth-child(2) .avatar{background:var(--teal);}
   .persona:nth-child(3) .avatar{background:var(--coral);}
+  .persona-back .avatar{width:40px; height:40px; font-size:0.9rem; margin-bottom:12px;}
   .persona h3{font-size:1rem; font-weight:600; margin-bottom:4px;}
   .persona .rol{color:var(--teal); font-size:0.83rem; font-weight:500; margin-bottom:10px;}
   .persona p.bio{color:var(--ink-soft); font-size:0.88rem;}
+  .persona-back h4{
+    font-size:0.72rem; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--teal-dark); font-weight:700; margin:14px 0 6px;
+  }
+  .persona-back h4:first-of-type{margin-top:2px;}
+  .persona-back p{color:var(--ink-soft); font-size:0.83rem; line-height:1.5;}
+  .flip-hint{
+    display:flex; align-items:center; gap:6px; margin-top:auto; padding-top:14px;
+    font-size:0.78rem; font-weight:600; color:var(--teal-dark); flex-shrink:0;
+  }
+  .flip-hint svg{width:14px; height:14px; flex-shrink:0;}
+
+  .persona-front.has-photo{
+    padding:0;
+    background:linear-gradient(155deg, var(--teal-dark) 0%, var(--teal-dark-deep) 100%);
+  }
+  .persona-photo-wrap{
+    flex:1 1 auto; min-height:0; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    padding:22px 22px 0;
+  }
+  .persona-photo{
+    width:170px; height:210px;
+    object-fit:cover; object-position:center 18%;
+    border-radius:14px;
+    box-shadow:0 14px 30px -10px rgba(0,0,0,0.45);
+  }
+  .persona-content{flex-shrink:0; padding:18px 22px 22px;}
+  .has-photo h3, .has-photo p.bio, .has-photo .flip-hint{color:var(--white);}
+  .has-photo .rol{color:var(--yellow);}
+  .has-photo p.bio{color:rgba(255,255,255,0.85);}
 
   @media (min-width:640px){
     .equipo-grid{grid-template-columns:repeat(2,1fr);}
@@ -302,11 +369,18 @@
 
   @media (min-width:880px){
     .equipo-grid{grid-template-columns:repeat(3,1fr); gap:28px;}
-    .persona{border-radius:24px; padding:32px 26px;}
+    .persona{height:540px;}
+    .persona-face{border-radius:24px; padding:32px 26px;}
+    .persona-front.has-photo{padding:0;}
+    .persona-content{padding:28px;}
+    .persona-photo{width:180px; height:220px;}
     .avatar{width:64px; height:64px; font-size:1.2rem; margin-bottom:18px;}
+    .persona-back .avatar{width:44px; height:44px; font-size:0.95rem; margin-bottom:12px;}
     .persona h3{font-size:1.05rem;}
     .persona .rol{font-size:0.85rem; margin-bottom:12px;}
     .persona p.bio{font-size:0.9rem;}
+    .persona-back h4{font-size:0.76rem;}
+    .persona-back p{font-size:0.87rem;}
   }
 
   /* ---------- Counters ---------- */
@@ -401,9 +475,9 @@
 
 <header>
   <div class="nav">
-    <div class="brand">
+    <a href="#" class="brand" aria-label="Ir al inicio">
       <img src="img/logo.png" alt="PetAlert IA">
-    </div>
+    </a>
     <button class="burger" id="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-links">
       <span></span><span></span><span></span>
     </button>
@@ -464,6 +538,7 @@
 <section class="problema" id="problema">
   <div class="wrap problema-grid">
     <div class="stat-block">
+      <svg class="paw-mark" viewBox="0 -960 960 960" fill="currentColor"><path d="M180-475q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29Zm109-189q-29-29-29-71t29-71q29-29 71-29t71 29q29 29 29 71t-29 71q-29 29-71 29t-71-29Zm240 0q-29-29-29-71t29-71q29-29 71-29t71 29q29 29 29 71t-29 71q-29 29-71 29t-71-29Zm251 189q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM266-75q-45 0-75.5-34.5T160-191q0-52 35.5-91t70.5-77q29-31 50-67.5t50-68.5q22-26 51-43t63-17q34 0 63 16t51 42q28 32 49.5 69t50.5 69q35 38 70.5 77t35.5 91q0 47-30.5 81.5T694-75q-54 0-107-9t-107-9q-54 0-107 9t-107 9Z"/></svg>
       <div class="big">3 de 10</div>
       <p class="small">mascotas perdidas nunca regresan a casa, porque la información sobre ellas queda dispersa en grupos de redes sociales y carteles físicos que pocas personas ven a tiempo.</p>
     </div>
@@ -498,7 +573,6 @@
       <p>PetAlert IA guía a cada familia desde el registro de su mascota hasta el contacto con quien la encontró, comparando automáticamente reportes y avistamientos.</p>
     </div>
     <div class="flujo-track">
-      <div class="flujo-line"></div>
       <div class="flujo-steps">
         <div class="paso">
           <div class="paso-num">1</div>
@@ -538,23 +612,71 @@
       <p>Diseñamos este prototipo aplicando teoría del color y fundamentos de UX/UI centrados en la claridad, la confianza y el reencuentro.</p>
     </div>
     <div class="equipo-grid">
-      <div class="persona">
-        <div class="avatar">SO</div>
-        <h3>Sebastian Luis Osorio</h3>
-        <div class="rol">Diseño UX / Investigación</div>
-        <p class="bio">Lideró la definición del problema y el flujo de usuario, desde el registro hasta el contacto entre familias.</p>
+      <div class="persona" tabindex="0" role="button" aria-pressed="false" aria-label="Sebastian Luis Osorio, Líder de desarrollo de negocios. Toca para ver la descripción de su rol.">
+        <div class="persona-card">
+          <div class="persona-face persona-front has-photo">
+            <div class="persona-photo-wrap">
+              <img class="persona-photo" src="img/team-sebastian.png" alt="Foto de Sebastian Luis Osorio">
+            </div>
+            <div class="persona-content">
+              <h3>Sebastian Luis Osorio</h3>
+              <div class="rol">Líder de desarrollo de negocios</div>
+              <p class="bio">Lideró la definición del problema y el flujo de usuario, desde el registro hasta el contacto entre familias.</p>
+              <span class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.7V12a9 9 0 0 1 9-9h9M7 21.9l-4-4 4-4"/><path d="M21 11.3v.7a9 9 0 0 1-9 9H3"/></svg> Toca para ver su rol</span>
+            </div>
+          </div>
+          <div class="persona-face persona-back">
+            <div class="avatar"><img src="img/team-sebastian.png" alt="Foto de Sebastian Luis Osorio"></div>
+            <h3>Sebastian Luis Osorio</h3>
+            <h4>Descripción del rol</h4>
+            <p>Lidera el descubrimiento de la solución: conecta las necesidades de las familias con las características del producto y analiza a la competencia para detectar oportunidades de negocio.</p>
+            <span class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.7V12a9 9 0 0 1 9-9h9M7 21.9l-4-4 4-4"/><path d="M21 11.3v.7a9 9 0 0 1-9 9H3"/></svg> Toca para volver</span>
+          </div>
+        </div>
       </div>
-      <div class="persona">
-        <div class="avatar">DF</div>
-        <h3>Daniela Fierro</h3>
-        <div class="rol">Diseño UI / Identidad visual</div>
-        <p class="bio">Desarrolló la paleta de color y el sistema tipográfico que le dan a PetAlert IA su personalidad cercana.</p>
+      <div class="persona" tabindex="0" role="button" aria-pressed="false" aria-label="Daniela Fierro, Líder de mercadeo. Toca para ver la descripción de su rol.">
+        <div class="persona-card">
+          <div class="persona-face persona-front has-photo">
+            <div class="persona-photo-wrap">
+              <img class="persona-photo" src="img/team-daniela.png" alt="Foto de Daniela Fierro">
+            </div>
+            <div class="persona-content">
+              <h3>Daniela Fierro</h3>
+              <div class="rol">Líder de mercadeo</div>
+              <p class="bio">Desarrolló la paleta de color y el sistema tipográfico que le dan a PetAlert IA su personalidad cercana.</p>
+              <span class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.7V12a9 9 0 0 1 9-9h9M7 21.9l-4-4 4-4"/><path d="M21 11.3v.7a9 9 0 0 1-9 9H3"/></svg> Toca para ver su rol</span>
+            </div>
+          </div>
+          <div class="persona-face persona-back">
+            <div class="avatar"><img src="img/team-daniela.png" alt="Foto de Daniela Fierro"></div>
+            <h3>Daniela Fierro</h3>
+            <h4>Descripción del rol</h4>
+            <p>Lidera la experimentación de la landing page: define el público objetivo, impulsa la estrategia de promoción y mide los resultados para orientar las decisiones del equipo hacia el mercado.</p>
+            <span class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.7V12a9 9 0 0 1 9-9h9M7 21.9l-4-4 4-4"/><path d="M21 11.3v.7a9 9 0 0 1-9 9H3"/></svg> Toca para volver</span>
+          </div>
+        </div>
       </div>
-      <div class="persona">
-        <div class="avatar">AP</div>
-        <h3>Andres Felipe Piñeros</h3>
-        <div class="rol">Propuesta funcional</div>
-        <p class="bio">Estructuró la lógica del prototipo: registro, coincidencias automáticas y notificaciones.</p>
+      <div class="persona" tabindex="0" role="button" aria-pressed="false" aria-label="Felipe Piñeros, Líder tecnológico. Toca para ver la descripción de su rol.">
+        <div class="persona-card">
+          <div class="persona-face persona-front has-photo">
+            <div class="persona-photo-wrap">
+              <img class="persona-photo" src="img/team-felipe.png" alt="Foto de Andres Felipe Piñeros">
+            </div>
+            <div class="persona-content">
+              <h3>Andres Felipe Piñeros</h3>
+              <div class="rol">Líder tecnológico</div>
+              <p class="bio">Estructuró la lógica del prototipo: registro, coincidencias automáticas y notificaciones.</p>
+              <span class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.7V12a9 9 0 0 1 9-9h9M7 21.9l-4-4 4-4"/><path d="M21 11.3v.7a9 9 0 0 1-9 9H3"/></svg> Toca para ver su rol</span>
+            </div>
+          </div>
+          <div class="persona-face persona-back">
+            <div class="avatar"><img src="img/team-felipe.png" alt="Foto de Andres Felipe Piñeros"></div>
+            <h3>Andres Felipe Piñeros</h3>
+            <h4>Descripción del rol</h4>
+            <p>Lidera el prototipado del producto: diseña la estructura de la plataforma, integra las funcionalidades de IA y valida el prototipo con usuarios potenciales.</p>
+            <span class="flip-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.7V12a9 9 0 0 1 9-9h9M7 21.9l-4-4 4-4"/><path d="M21 11.3v.7a9 9 0 0 1-9 9H3"/></svg> Toca para volver</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -655,6 +777,21 @@
       navLinks.classList.remove('open');
       burger.classList.remove('open');
       burger.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  // Team cards flip on click/tap to reveal the role description
+  document.querySelectorAll('.persona').forEach(card => {
+    const toggleFlip = () => {
+      const flipped = card.classList.toggle('is-flipped');
+      card.setAttribute('aria-pressed', String(flipped));
+    };
+    card.addEventListener('click', toggleFlip);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleFlip();
+      }
     });
   });
 
