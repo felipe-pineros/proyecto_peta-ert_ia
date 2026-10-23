@@ -1,7 +1,23 @@
-# Local Python environment and secrets
-backend/.env
-/.env
+# Secretos: nunca se suben (solo los .env.example)
+.env
+*.env
+!.env.example
+
+# Entorno de Python
+.venv/
 backend/.venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Dependencias de Node (se reinstalan con npm install)
+node_modules/
+
+# Pesos de modelos de IA descargados (se descargan, no se versionan)
+backend/modelos/
+*.onnx
+*.pt
+*.safetensors
+
+# Fotos personales para evaluar la IA (privacidad)
+datos_evaluacion/
