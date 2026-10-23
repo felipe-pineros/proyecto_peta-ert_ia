@@ -537,29 +537,6 @@
     .form-grid{grid-template-columns:0.85fr 1.15fr; gap:56px; align-items:start;}
     form{border-radius:28px; padding:38px; gap:18px;}
   }
-  /* ---------- Functional report MVP ---------- */
-  .mvp-reports{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
-  .mvp-grid{display:grid; grid-template-columns:1fr; gap:20px;}
-  .mvp-card{background:var(--bg); border:1px solid var(--line); border-radius:20px; padding:22px;}
-  .mvp-card h3{font-size:1.12rem; color:var(--teal-dark); margin-bottom:14px;}
-  .mvp-card form{display:grid; grid-template-columns:1fr; gap:12px; padding:0; border:0; box-shadow:none; background:transparent;}
-  .mvp-card label{display:block; color:var(--ink-soft); font-size:.82rem; font-weight:600; margin-bottom:5px;}
-  .mvp-card input,.mvp-card select,.mvp-card textarea{width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--white); color:var(--ink); font:inherit; font-size:.9rem;}
-  .mvp-card textarea{min-height:90px; resize:vertical;}
-  .mvp-row{display:grid; grid-template-columns:1fr; gap:12px;}
-  .mvp-actions{display:flex; flex-wrap:wrap; gap:10px;}
-  .mvp-button{padding:10px 16px; border-radius:999px; background:var(--teal-dark); color:var(--white); font-weight:600;}
-  .mvp-button.secondary{background:var(--white); color:var(--teal-dark); border:1px solid var(--line);}
-  .mvp-button:disabled{opacity:.55; cursor:wait;}
-  .mvp-message{margin-top:12px; color:var(--ink-soft); font-size:.88rem; min-height:1.4em;}
-  .mvp-warning{font-size:.78rem; color:var(--ink-soft); margin-top:4px;}
-  .mvp-feed{display:grid; grid-template-columns:1fr; gap:14px; margin-top:24px;}
-  .mvp-report{background:var(--white); border:1px solid var(--line); border-radius:16px; padding:16px;}
-  .mvp-report img{width:100%; max-height:260px; object-fit:cover; border-radius:12px; margin:10px 0;}
-  .mvp-report h4{color:var(--teal-dark); margin-bottom:4px;}
-  .mvp-report p{font-size:.88rem; color:var(--ink-soft); margin-top:5px;}
-  @media (min-width:640px){.mvp-row{grid-template-columns:repeat(2,1fr)} .mvp-feed{grid-template-columns:repeat(2,1fr)}}
-  @media (min-width:880px){.mvp-grid{grid-template-columns:.8fr 1.2fr; gap:24px}.mvp-card{padding:28px}.mvp-feed{grid-template-columns:repeat(3,1fr)}}
 
   /* ---------- Footer ---------- */
   footer{
@@ -600,7 +577,7 @@
       <a href="#equipo">Equipo</a>
       <a href="#contacto">Contacto</a>
     </nav>
-    <a href="#reportes" class="nav-cta">
+    <a href="#contacto" class="nav-cta">
       <span class="nav-cta-icon">
         <svg viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M180-475q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29Zm109-189q-29-29-29-71t29-71q29-29 71-29t71 29q29 29 29 71t-29 71q-29 29-71 29t-71-29Zm240 0q-29-29-29-71t29-71q29-29 71-29t71 29q29 29 29 71t-29 71q-29 29-71 29t-71-29Zm251 189q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM266-75q-45 0-75.5-34.5T160-191q0-52 35.5-91t70.5-77q29-31 50-67.5t50-68.5q22-26 51-43t63-17q34 0 63 16t51 42q28 32 49.5 69t50.5 69q35 38 70.5 77t35.5 91q0 47-30.5 81.5T694-75q-54 0-107-9t-107-9q-54 0-107 9t-107 9Z"/></svg>
       </span>
@@ -617,7 +594,7 @@
       <p class="lead">Sube una foto y te ayudamos a reencontrarla con su familia, usando búsqueda inteligente en lugar de carteles pegados en postes.</p>
 
       <div class="hero-actions">
-        <a href="#reportes" class="action-card action-primary" data-report-type="lost">
+        <a href="#contacto" class="action-card action-primary">
           <span class="action-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           </span>
@@ -626,7 +603,7 @@
             <small>Encuentra coincidencias con mascotas reportadas</small>
           </span>
         </a>
-        <a href="#reportes" class="action-card action-secondary" data-report-type="found">
+        <a href="#contacto" class="action-card action-secondary">
           <span class="action-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
           </span>
@@ -822,69 +799,6 @@
   </div>
 </section>
 
-<section class="mvp-reports" id="reportes">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="kicker">Reportes de la comunidad</div>
-      <h2>Publica o consulta un reporte</h2>
-      <p>Inicia sesión para ver reportes activos y compartir información de una mascota perdida o encontrada.</p>
-    </div>
-    <div class="mvp-grid">
-      <article class="mvp-card" id="account-card">
-        <h3 id="account-title">Inicia sesión o crea una cuenta</h3>
-        <form id="account-form">
-          <div><label for="account-email">Correo</label><input id="account-email" type="email" autocomplete="email" required maxlength="254"></div>
-          <div><label for="account-password">Contraseña</label><input id="account-password" type="password" autocomplete="current-password" required minlength="8" maxlength="256"></div>
-          <div class="mvp-actions">
-            <button class="mvp-button" id="account-submit" type="submit">Iniciar sesión</button>
-            <button class="mvp-button secondary" id="account-mode" type="button">Crear cuenta</button>
-          </div>
-        </form>
-        <div class="mvp-actions" id="account-session" hidden>
-          <span id="account-label"></span><button class="mvp-button secondary" id="account-logout" type="button">Cerrar sesión</button>
-        </div>
-        <p class="mvp-message" id="account-message" role="status" aria-live="polite"></p>
-      </article>
-      <article class="mvp-card">
-        <h3>Crear un reporte</h3>
-        <form id="report-form">
-          <div class="mvp-row">
-            <div><label for="report-type">Tipo</label><select id="report-type"><option value="lost">Mascota perdida</option><option value="found">Mascota encontrada</option></select></div>
-            <div><label for="report-species">Especie</label><select id="report-species"><option value="dog">Perro</option><option value="cat">Gato</option></select></div>
-          </div>
-          <div class="mvp-row">
-            <div><label for="report-name">Nombre (si se conoce)</label><input id="report-name" maxlength="120"></div>
-            <div><label for="report-breed">Raza (si se conoce)</label><input id="report-breed" maxlength="120"></div>
-          </div>
-          <div class="mvp-row">
-            <div><label for="report-color">Color</label><input id="report-color" maxlength="120"></div>
-            <div><label for="report-size">Tamaño</label><select id="report-size"><option value="unknown">No sé</option><option value="small">Pequeño</option><option value="medium">Mediano</option><option value="large">Grande</option></select></div>
-          </div>
-          <div><label for="report-features">Señas particulares</label><textarea id="report-features" maxlength="2000"></textarea></div>
-          <div><label for="report-description">Descripción</label><textarea id="report-description" required maxlength="5000"></textarea><p class="mvp-warning">No escribas teléfonos, correos ni direcciones exactas en los campos públicos.</p></div>
-          <div class="mvp-row">
-            <div><label for="report-location">Ubicación aproximada</label><input id="report-location" maxlength="160" placeholder="Barrio o sector, no dirección exacta"></div>
-            <div><label for="report-event-at">Fecha y hora</label><input id="report-event-at" type="datetime-local"></div>
-          </div>
-          <div class="mvp-row">
-            <div><label for="report-phone">Teléfono de contacto (privado)</label><input id="report-phone" type="tel" maxlength="40"></div>
-            <div><label for="report-contact-email">Correo de contacto (privado)</label><input id="report-contact-email" type="email" maxlength="254"></div>
-          </div>
-          <div><label for="report-photos">Fotografías (1 a 5; JPEG, PNG o WebP, máximo 10 MiB cada una)</label><input id="report-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required></div>
-          <button class="mvp-button" id="report-submit" type="submit">Guardar y publicar</button>
-        </form>
-        <p class="mvp-message" id="report-message" role="status" aria-live="polite"></p>
-      </article>
-    </div>
-    <div class="mvp-actions" style="margin-top:24px;align-items:center">
-      <h3 style="margin-right:auto">Reportes activos y mi historial</h3>
-      <button class="mvp-button secondary" id="reports-refresh" type="button">Actualizar</button>
-      <button class="mvp-button secondary" id="reports-recover" type="button">Recuperar cargas atascadas</button>
-    </div>
-    <div id="report-feed" class="mvp-feed" aria-live="polite"></div>
-  </div>
-</section>
-
 <section class="contacto" id="contacto">
   <div class="wrap form-grid">
     <div class="form-side">
@@ -1076,289 +990,6 @@
       submitBtn.style.opacity = '0.7';
     }, 900);
   });
-</script>
-
-<script>
-  // PETA MVP: the browser only keeps the user's short-lived Supabase access token.
-  // The service_role credential is never sent to this page.
-  (() => {
-    const tokenKey = 'petaAccessToken';
-    const emailKey = 'petaAccountEmail';
-    const accountForm = document.getElementById('account-form');
-    const accountMode = document.getElementById('account-mode');
-    const accountSubmit = document.getElementById('account-submit');
-    const accountMessage = document.getElementById('account-message');
-    const accountSession = document.getElementById('account-session');
-    const accountLabel = document.getElementById('account-label');
-    const reportForm = document.getElementById('report-form');
-    const reportMessage = document.getElementById('report-message');
-    const reportFeed = document.getElementById('report-feed');
-    const recoverButton = document.getElementById('reports-recover');
-    let registering = false;
-    let currentDraftId = null;
-    let completedUploads = new Set();
-
-    const accessToken = () => sessionStorage.getItem(tokenKey);
-    const headers = (extra = {}, token = accessToken()) => ({ ...(token ? { Authorization: `Bearer ${token}` } : {}), ...extra });
-    function setDraftLocked(locked) {
-      reportForm.querySelectorAll('input, select, textarea').forEach((field) => {
-        if (field.id !== 'report-photos') field.disabled = locked;
-      });
-      document.getElementById('report-photos').required = !locked;
-      document.getElementById('report-submit').textContent = locked ? 'Continuar borrador' : 'Guardar y publicar';
-    }
-    function clearSession(message = 'La sesión venció. Inicia sesión de nuevo.') {
-      sessionStorage.removeItem(tokenKey);
-      sessionStorage.removeItem(emailKey);
-      reportFeed.replaceChildren();
-      showAccount(message);
-      reportMessage.textContent = 'La sesión ya no es válida. Inicia sesión de nuevo; los datos escritos que aún no enviaste permanecen en el formulario.';
-      addText(reportFeed, 'p', 'Inicia sesión para consultar reportes activos y tus borradores.');
-    }
-    async function api(path, options = {}) {
-      const sentToken = accessToken();
-      const response = await fetch(`/api${path}`, { ...options, headers: headers(options.headers || {}, sentToken) });
-      let payload = {};
-      try { payload = await response.json(); } catch (_) {}
-      if (response.status === 401 && sentToken && accessToken() === sentToken) {
-        clearSession('La sesión venció. Inicia sesión de nuevo para continuar.');
-      }
-      if (!response.ok) throw new Error(payload.detail || 'No se pudo completar la operación.');
-      return payload;
-    }
-    function showAccount(message = '') {
-      const active = Boolean(accessToken());
-      accountForm.hidden = active;
-      accountSession.hidden = !active;
-      recoverButton.style.display = active ? '' : 'none';
-      accountLabel.textContent = active ? `Sesión: ${sessionStorage.getItem(emailKey) || 'activa'}` : '';
-      accountMessage.textContent = message;
-      document.getElementById('account-title').textContent = active ? 'Tu cuenta' : 'Inicia sesión o crea una cuenta';
-    }
-    function setBusy(button, busy, label) {
-      button.disabled = busy;
-      if (!button.dataset.originalLabel) button.dataset.originalLabel = button.textContent;
-      button.textContent = busy ? label : button.dataset.originalLabel;
-    }
-
-    accountMode.addEventListener('click', () => {
-      registering = !registering;
-      accountSubmit.textContent = registering ? 'Crear cuenta' : 'Iniciar sesión';
-      accountMode.textContent = registering ? 'Ya tengo cuenta' : 'Crear cuenta';
-      document.getElementById('account-title').textContent = registering ? 'Crea tu cuenta' : 'Inicia sesión';
-    });
-    accountForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      setBusy(accountSubmit, true, 'Conectando…');
-      accountMessage.textContent = '';
-      try {
-        const result = await api(`/auth/${registering ? 'register' : 'login'}`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: document.getElementById('account-email').value.trim(), password: document.getElementById('account-password').value })
-        });
-        if (result.access_token) {
-          sessionStorage.setItem(tokenKey, result.access_token);
-          sessionStorage.setItem(emailKey, result.user?.email || document.getElementById('account-email').value.trim());
-          showAccount('Sesión iniciada.');
-          await loadReports();
-        } else {
-          accountMessage.textContent = 'Cuenta creada. Si Supabase solicita confirmar el correo, confírmalo y luego inicia sesión.';
-        }
-      } catch (error) {
-        accountMessage.textContent = error.message;
-      } finally {
-        setBusy(accountSubmit, false);
-      }
-    });
-    document.getElementById('account-logout').addEventListener('click', () => {
-      sessionStorage.removeItem(tokenKey);
-      sessionStorage.removeItem(emailKey);
-      currentDraftId = null;
-      completedUploads = new Set();
-      reportForm.reset();
-      setDraftLocked(false);
-      reportFeed.replaceChildren();
-      showAccount('Sesión cerrada.');
-    });
-
-    document.querySelectorAll('[data-report-type]').forEach((link) => {
-      link.addEventListener('click', () => { document.getElementById('report-type').value = link.dataset.reportType; });
-    });
-
-    reportForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      if (!accessToken()) {
-        reportMessage.textContent = 'Inicia sesión antes de crear un reporte.';
-        document.getElementById('account-email').focus();
-        return;
-      }
-      const photos = [...document.getElementById('report-photos').files];
-      if ((!photos.length && !currentDraftId) || photos.length > 5) {
-        reportMessage.textContent = 'Selecciona hasta cinco fotografías; un borrador puede continuar con las fotos que ya tiene.';
-        return;
-      }
-      const submit = document.getElementById('report-submit');
-      setBusy(submit, true, 'Guardando…');
-      reportMessage.textContent = '';
-      try {
-        if (!currentDraftId) {
-          const eventValue = document.getElementById('report-event-at').value;
-          const draft = await api('/reports', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              report_type: document.getElementById('report-type').value,
-              species: document.getElementById('report-species').value,
-              animal_name: document.getElementById('report-name').value.trim() || null,
-              breed: document.getElementById('report-breed').value.trim() || null,
-              color: document.getElementById('report-color').value.trim() || null,
-              size: document.getElementById('report-size').value,
-              distinctive_features: document.getElementById('report-features').value.trim() || null,
-              description: document.getElementById('report-description').value.trim(),
-              location_label: document.getElementById('report-location').value.trim() || null,
-              event_at: eventValue ? new Date(eventValue).toISOString() : null,
-              contact_phone: document.getElementById('report-phone').value.trim() || null,
-              contact_email: document.getElementById('report-contact-email').value.trim() || null,
-              precise_latitude: null, precise_longitude: null
-            })
-          });
-          currentDraftId = draft.id;
-          completedUploads = new Set();
-        }
-        for (const photo of photos) {
-          const fingerprint = `${photo.name}:${photo.size}:${photo.lastModified}`;
-          if (completedUploads.has(fingerprint)) continue;
-          const body = new FormData();
-          body.append('photo', photo);
-          await api(`/reports/${currentDraftId}/photos`, { method: 'POST', body });
-          completedUploads.add(fingerprint);
-        }
-        await api(`/reports/${currentDraftId}/publish`, { method: 'POST' });
-        currentDraftId = null;
-        completedUploads = new Set();
-        reportForm.reset();
-        setDraftLocked(false);
-        reportMessage.textContent = 'Reporte publicado. Las fotografías fueron validadas antes de mostrarse.';
-        await loadReports();
-      } catch (error) {
-        reportMessage.textContent = currentDraftId
-          ? `El borrador ${currentDraftId} se conserva. Corrige el problema o vuelve a intentar con las fotos pendientes: ${error.message}`
-          : error.message;
-      } finally {
-        setBusy(submit, false);
-      }
-    });
-
-    function addText(parent, tag, text, className) {
-      const element = document.createElement(tag);
-      element.textContent = text || '';
-      if (className) element.className = className;
-      parent.append(element);
-      return element;
-    }
-    async function renderReport(report, owner) {
-      const card = document.createElement('article');
-      card.className = 'mvp-report';
-      const kind = report.report_type === 'lost' ? 'Perdida' : 'Encontrada';
-      addText(card, 'h4', `${report.animal_name || 'Mascota'} · ${kind}`);
-      addText(card, 'p', `${report.species === 'dog' ? 'Perro' : 'Gato'} · ${report.status}`);
-      addText(card, 'p', [report.breed, report.color, report.size].filter(Boolean).join(' · '));
-      addText(card, 'p', report.description);
-      if (report.location_label) addText(card, 'p', `Zona aproximada: ${report.location_label}`);
-      for (const photoId of (report.photo_ids || []).slice(0, 3)) {
-        try {
-          const signed = await api(`/photos/${encodeURIComponent(photoId)}/signed-url`);
-          const image = document.createElement('img');
-          image.src = signed.url;
-          image.alt = `Fotografía del reporte ${report.animal_name || ''}`;
-          image.loading = 'lazy';
-          card.append(image);
-        } catch (_) { /* Keep the report card if a temporary image URL cannot be issued. */ }
-      }
-      if (owner && report.status === 'active') {
-        const actions = document.createElement('div');
-        actions.className = 'mvp-actions';
-        for (const [status, label] of [['resolve', 'Marcar resuelto'], ['withdraw', 'Retirar']]) {
-          const button = document.createElement('button');
-          button.type = 'button'; button.className = 'mvp-button secondary'; button.textContent = label;
-          button.addEventListener('click', async () => {
-            button.disabled = true;
-            try { await api(`/reports/${encodeURIComponent(report.id)}/${status}`, { method: 'POST' }); await loadReports(); }
-            catch (error) { reportMessage.textContent = error.message; button.disabled = false; }
-          });
-          actions.append(button);
-        }
-        card.append(actions);
-      }
-      if (owner && report.status === 'draft') {
-        const resume = document.createElement('button');
-        resume.type = 'button';
-        resume.className = 'mvp-button secondary';
-        resume.textContent = 'Continuar borrador';
-        resume.addEventListener('click', () => {
-          currentDraftId = report.id;
-          completedUploads = new Set();
-          document.getElementById('report-type').value = report.report_type;
-          document.getElementById('report-species').value = report.species;
-          document.getElementById('report-name').value = report.animal_name || '';
-          document.getElementById('report-breed').value = report.breed || '';
-          document.getElementById('report-color').value = report.color || '';
-          document.getElementById('report-size').value = report.size || 'unknown';
-          document.getElementById('report-features').value = report.distinctive_features || '';
-          document.getElementById('report-description').value = report.description || '';
-          document.getElementById('report-location').value = report.location_label || '';
-          document.getElementById('report-event-at').value = report.event_at ? report.event_at.slice(0, 16) : '';
-          document.getElementById('report-phone').value = '';
-          document.getElementById('report-contact-email').value = '';
-          document.getElementById('report-photos').value = '';
-          setDraftLocked(true);
-          reportMessage.textContent = 'Borrador recuperado. Los datos ya guardados no se pueden editar aquí; agrega fotos si hacen falta y continúa.';
-          reportForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-        card.append(resume);
-      }
-      return card;
-    }
-    async function loadReports() {
-      if (!accessToken()) {
-        reportFeed.replaceChildren();
-        addText(reportFeed, 'p', 'Inicia sesión para consultar reportes activos y tu historial.');
-        return;
-      }
-      reportFeed.replaceChildren();
-      try {
-        const [active, mine] = await Promise.all([api('/reports'), api('/reports?mine=true')]);
-        if (currentDraftId && !mine.some(report => report.id === currentDraftId)) {
-          currentDraftId = null;
-          completedUploads = new Set();
-          setDraftLocked(false);
-          reportMessage.textContent = 'El borrador anterior no pertenece a esta sesión. Los datos del formulario se conservaron; guarda un borrador nuevo para continuar.';
-        }
-        const items = new Map();
-        mine.forEach(report => items.set(report.id, { report, owner: true }));
-        active.forEach(report => { if (!items.has(report.id)) items.set(report.id, { report, owner: false }); });
-        if (!items.size) addText(reportFeed, 'p', 'Todavía no hay reportes visibles.');
-        for (const { report, owner } of items.values()) reportFeed.append(await renderReport(report, owner));
-      } catch (error) {
-        if (!accessToken()) return;
-        addText(reportFeed, 'p', error.message);
-      }
-    }
-    document.getElementById('reports-refresh').addEventListener('click', loadReports);
-    recoverButton.addEventListener('click', async () => {
-      setBusy(recoverButton, true, 'Revisando…');
-      try {
-        const result = await api('/reports/recover-photos', { method: 'POST' });
-        reportMessage.textContent = `Recuperación: ${result.removed} foto(s) limpiada(s); ${result.retry_pending} borrado(s) pendiente(s) de reintento; ${result.pending_review} carga(s) incierta(s) conservada(s) para revisión.`;
-        await loadReports();
-      } catch (error) {
-        reportMessage.textContent = error.message;
-      } finally {
-        setBusy(recoverButton, false);
-      }
-    });
-    showAccount();
-    loadReports();
-  })();
 </script>
 
 </body>
