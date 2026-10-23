@@ -1,0 +1,7 @@
+# Local Python environment and secrets
+backend/.env
+/.env
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
