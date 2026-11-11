@@ -40,15 +40,28 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/api/config", tags=["sistema"])
+async def public_config():
+    """Datos PÚBLICOS que necesita supabase-js en el navegador (nunca la secret key)."""
+    s = get_settings()
+    return {"supabase_url": s.supabase_url, "supabase_publishable_key": s.publishable_key}
+
+
 for module in (perfil, mascotas, reportes, fotos, coincidencias, notificaciones):
     app.include_router(module.router)
 
 
-# Frontend: SOLO index.html e img/. Nunca se monta la raíz del proyecto
-# (expondría backend/.env y el código).
+# Frontend: SOLO las dos páginas y las carpetas img/, css/ y js/.
+# Nunca se monta la raíz del proyecto (expondría backend/.env y el código).
 @app.get("/", include_in_schema=False)
 async def index():
     return FileResponse(ROOT_DIR / "index.html")
 
 
-app.mount("/img", StaticFiles(directory=ROOT_DIR / "img"), name="img")
+@app.get("/app.html", include_in_schema=False)
+async def app_page():
+    return FileResponse(ROOT_DIR / "app.html")
+
+
+for folder in ("img", "css", "js"):
+    app.mount(f"/{folder}", StaticFiles(directory=ROOT_DIR / folder), name=folder)

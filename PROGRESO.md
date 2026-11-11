@@ -9,7 +9,7 @@
 | 2 | Arquitectura y datos | ✅ Completada (2026-10-23) |
 | 3 | Supabase y seguridad | ✅ Completada (2026-11-10) |
 | 4 | Backend CRUD | ✅ Completada (2026-11-10) |
-| 5 | Integración frontend | ⏳ Pendiente |
+| 5 | Integración frontend | ✅ Completada (2026-11-10) |
 | 6 | Evaluación del modelo IA | ⏳ Pendiente |
 | 7 | Motor de coincidencias | ⏳ Pendiente |
 | 8 | Notificaciones | ⏳ Pendiente |
@@ -40,8 +40,20 @@
   - Comprobado que `uvicorn` arranca y responde en `/api/health`, `/` y `/docs`.
   - Cambios respecto a `docs/arquitectura.md` (ya anotados allí): la sesión se valida con `/auth/v1/user` en vez de JWKS; rutas añadidas `GET /api/species`, `DELETE /api/photos/{id}`, `GET /api/matches/{id}`.
 
+- **Etapa 5:**
+  - Estructura aprobada por Daniela: `index.html` (landing, mismo diseño) + `app.html` (aplicación), con estilos y lógica en archivos aparte.
+  - `css/estilos.css`: el CSS de `index.html` movido sin cambios (lo comparten ambas páginas). `css/app.css`: estilos de la app con la misma paleta.
+  - `index.html`: botón "Iniciar sesión", botones del hero y "Reportar mascota" llevan a la app, y el formulario de demostración ahora crea la cuenta real en Supabase.
+  - `app.html` + `js/app.js`: login, explorar reportes (filtros), mis reportes, crear/editar reporte con mapa y fotos, detalle, coincidencias (confirmar/descartar, contacto tras confirmar) y avisos con contador.
+  - `js/sesion.js` (supabase-js 2.118.0, MIT; renueva la sesión sola), `js/mapa.js` (Leaflet 1.9.4, BSD-2 + OpenStreetMap). Ambas librerías por CDN con huella SRI.
+  - Backend: `GET /api/config` (solo URL + publishable key) y entrega de `app.html`, `css/`, `js/`.
+  - Sin `innerHTML` con datos de usuarios (evita XSS).
+  - 5 pruebas en navegador real (`backend/tests/test_frontend_e2e.py`, Playwright + Edge de Windows). **28/28 pruebas pasan** (2026-11-10). Capturas revisadas en escritorio y celular.
+
 ## Pendiente
-- **Etapa 5 (siguiente):** conectar `index.html` con la API (registro/login con supabase-js, formularios, mapa Leaflet).
+- **Etapa 6 (siguiente):** evaluación del modelo de IA (necesita las fotos de evaluación).
+- Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
+- El registro real envía un correo de confirmación; el correo gratuito de Supabase permite muy pocos por hora (para la demo puede convenir configurar SMTP propio o desactivar la confirmación en Auth).
 - Las coincidencias aún no se crean solas: el motor es de la etapa 7. Hoy solo existen si se insertan a mano (así lo hacen las pruebas).
 - Las notificaciones de `new_match` las creará el motor (etapas 7–8).
 
@@ -60,7 +72,7 @@
 - D4: máximo 5 fotos por reporte.
 
 ## Cómo verificar
-- Etapas 3 y 4: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v` → deben pasar las 23 pruebas (necesita internet y `backend/.env`).
+- Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v` → deben pasar las 28 pruebas (necesita internet, `backend/.env` y Microsoft Edge).
 - Arrancar el servidor: `.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload` y abrir http://localhost:8000/docs (lista de rutas de la API) o http://localhost:8000 (frontend).
 - Etapa 2:
   - `git status` muestra `node_modules` como eliminado del índice y `ls node_modules` sigue funcionando.

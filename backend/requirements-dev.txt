@@ -2,3 +2,6 @@
 httpx>=0.28,<1
 python-dotenv>=1,<2
 pytest>=8,<10
+# Pruebas del frontend en un navegador real. Usa el Microsoft Edge instalado en Windows
+# (no descarga navegadores). Apache-2.0, ~41 MB.
+playwright>=1.50,<2

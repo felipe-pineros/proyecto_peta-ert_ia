@@ -8,6 +8,7 @@
 ```
 Navegador (index.html, HTML/CSS/JS sin framework)
   │  supabase-js (CDN, versión fija) → SOLO registro, login y refresco de sesión
+  │  (la URL y la publishable key se piden a GET /api/config; no están escritas en el código)
   │  fetch /api/...  con  Authorization: Bearer <token del usuario>
   ▼
 FastAPI  (backend/, un solo servicio)
@@ -248,8 +249,10 @@ Se notifica solo si `total ≥ umbral` y la pareja es nueva.
 
 ```
 proyecto_peta-ert_ia/
-├─ index.html, img/            (frontend actual, se conserva)
-├─ js/                         (JS nuevo de la app, si index.html crece demasiado)
+├─ index.html, img/            (landing, se conserva su diseño)
+├─ app.html                    (aplicación: login, reportes, mapa, coincidencias, avisos) — etapa 5
+├─ css/  estilos.css (CSS original de index.html, compartido) · app.css
+├─ js/   sesion.js · registro.js · mapa.js · app.js
 ├─ backend/
 │  ├─ app/  main.py, config.py, auth.py, routers/, services/
 │  ├─ ia/   base.py (interfaz), dinov2.py, megadescriptor.py, recorte.py

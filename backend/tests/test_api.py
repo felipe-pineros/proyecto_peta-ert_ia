@@ -8,6 +8,7 @@ calcula es de la etapa 7.
 """
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
+import json
 import os
 import uuid
 
@@ -142,8 +143,15 @@ def test_salud_y_frontend_sin_exponer_archivos(api):
     home = api.get("/")
     assert home.status_code == 200 and "text/html" in home.headers["content-type"]
     assert api.get("/img/logo.png").status_code == 200
-    for secreto in ("/backend/.env", "/.env", "/backend/app/config.py", "/img/../backend/.env"):
+    for archivo in ("/app.html", "/css/estilos.css", "/css/app.css", "/js/app.js", "/js/sesion.js"):
+        assert api.get(archivo).status_code == 200, archivo
+    for secreto in ("/backend/.env", "/.env", "/backend/app/config.py", "/img/../backend/.env",
+                    "/js/../backend/.env", "/PROGRESO.md", "/supabase/migrations"):
         assert api.get(secreto).status_code == 404, secreto
+    # La configuración pública lleva la publishable key y NUNCA la secret key.
+    config = ok(api.get("/api/config"))
+    assert config["supabase_publishable_key"] == PUBLISHABLE
+    assert SECRET not in json.dumps(config)
 
 
 def test_sin_sesion_o_token_falso_da_401(api):
