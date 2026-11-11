@@ -1,0 +1,4 @@
+# Dependencias para pruebas (no van en la imagen de producción).
+httpx>=0.28,<1
+python-dotenv>=1,<2
+pytest>=8,<10
