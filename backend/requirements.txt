@@ -1,0 +1,8 @@
+# Dependencias del servidor (van en la imagen Docker de la etapa 9).
+# Todas con licencia permisiva (MIT, BSD-3 o Apache-2.0) y sin necesidad de GPU.
+fastapi>=0.115,<1          # API web (MIT)
+uvicorn>=0.30,<1           # servidor que ejecuta FastAPI (BSD-3)
+python-multipart>=0.0.20,<1  # recibir fotos en formularios (Apache-2.0)
+Pillow>=11,<13             # validar y recodificar fotos (MIT-CMU)
+httpx>=0.28,<1             # llamadas a Supabase (BSD-3)
+python-dotenv>=1,<2        # leer backend/.env (BSD-3)

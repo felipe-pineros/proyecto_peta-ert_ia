@@ -12,7 +12,9 @@ Navegador (index.html, HTML/CSS/JS sin framework)
   ▼
 FastAPI  (backend/, un solo servicio)
   ├─ sirve index.html e img/ (mismo origen → sin problemas de CORS)
-  ├─ valida el token del usuario (claves públicas JWKS de Supabase)
+  ├─ valida el token del usuario preguntando a Supabase Auth (/auth/v1/user)
+  │   (etapa 4: se prefirió a JWKS porque no añade dependencias y una sesión
+  │    cerrada o una cuenta borrada deja de servir al instante)
   ├─ operaciones del usuario → Supabase con el TOKEN DEL USUARIO (aplica RLS)
   ├─ operaciones internas → Supabase con la SECRET KEY (Storage, embeddings,
   │                          coincidencias, notificaciones)
@@ -228,6 +230,7 @@ Se notifica solo si `total ≥ umbral` y la pareja es nueva.
 |---|---|---|
 | GET | `/api/health` | comprobar que el servidor vive |
 | GET / PATCH | `/api/me` | ver y editar mi perfil |
+| GET | `/api/species` | especies activas (para el formulario) — *añadida en etapa 4* |
 | GET / POST | `/api/pets` · PATCH `/api/pets/{id}` | mis mascotas |
 | GET | `/api/reports?type=&species=` | reportes activos (con filtros) |
 | GET | `/api/reports/mine` | mis reportes |
@@ -235,7 +238,9 @@ Se notifica solo si `total ≥ umbral` y la pareja es nueva.
 | POST | `/api/reports/{id}/photos` | subir foto |
 | POST | `/api/reports/{id}/publish` · `/withdraw` | cambiar estado |
 | GET | `/api/photos/{id}/url` | URL firmada temporal |
+| DELETE | `/api/photos/{id}` | borrar una foto (un reporte publicado conserva al menos una) — *añadida en etapa 4* |
 | GET | `/api/reports/{id}/matches` | posibles coincidencias, ordenadas |
+| GET | `/api/matches/{id}` | detalle; si está confirmada, incluye el contacto de la otra persona — *añadida en etapa 4* |
 | POST | `/api/matches/{id}/confirm` · `/discard` | decidir |
 | GET | `/api/notifications` · POST `/api/notifications/{id}/read` | avisos |
 
