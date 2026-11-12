@@ -76,6 +76,8 @@ async def list_active_reports(
     user: User = Depends(require_user),
 ):
     """Reportes activos (decisión D1: solo con sesión), del más reciente al más antiguo."""
+    if user.is_anonymous:  # los invitados no exploran reportes ajenos (también lo impide RLS)
+        raise HTTPException(status_code=403, detail="Crea una cuenta para ver los reportes")
     params = {"select": REPORT_COLS, "status": "eq.active", "order": "published_at.desc",
               "limit": str(limit), "offset": str(offset)}
     if type:
@@ -113,6 +115,14 @@ async def get_report(report_id: UUID, user: User = Depends(require_user)):
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_report(body: ReportCreate, user: User = Depends(require_user)):
+    # Invitados (reporte rápido sin cuenta): solo mascotas encontradas y con un contacto.
+    # La base de datos vuelve a exigir ambas cosas (migración 4).
+    if user.is_anonymous:
+        if body.type != "found":
+            raise HTTPException(status_code=403, detail="Para reportar una mascota perdida crea una cuenta")
+        if not body.contact_phone and not body.contact_email:
+            raise HTTPException(status_code=422,
+                                detail="Deja un teléfono o un correo para que el dueño pueda contactarte")
     data = body.model_dump(mode="json", exclude_none=True)
     report_fields = {k: data[k] for k in ("type", "pet_id", "species", *DESCRIPTIVE) if k in data}
     report_fields |= {"approx_lat": approx(body.lat), "approx_lng": approx(body.lng)}

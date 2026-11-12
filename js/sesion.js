@@ -84,11 +84,17 @@
       [/password should be at least|weak password/i, 'La contraseña es muy débil: usa al menos 8 caracteres.'],
       [/rate limit|too many/i, 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.'],
       [/invalid email|unable to validate email/i, 'El correo no es válido.'],
+      [/anonymous sign-ins are disabled/i, 'El reporte sin cuenta está desactivado en este momento. Crea una cuenta para reportar.'],
       [/signups not allowed/i, 'El registro de cuentas está desactivado en este momento.'],
     ];
     for (const [re, text] of map) if (re.test(msg)) return text;
     return msg || 'No se pudo completar la operación.';
   }
 
-  window.PetAlert = { getClient, getSession, api, ApiError, authMessage };
+  // ¿Es una sesión de invitado (reporte rápido sin cuenta)?
+  function isAnonymous(session) {
+    return Boolean(session && session.user && session.user.is_anonymous);
+  }
+
+  window.PetAlert = { getClient, getSession, api, ApiError, authMessage, isAnonymous };
 })();

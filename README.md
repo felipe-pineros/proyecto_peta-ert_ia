@@ -62,12 +62,17 @@ En **Supabase → SQL Editor**, ejecuta **en orden** el contenido de estos archi
 1. `supabase/migrations/20261023000001_esquema_base.sql`
 2. `supabase/migrations/20261023000002_seguridad_rls.sql`
 3. `supabase/migrations/20261023000003_storage.sql`
+4. `supabase/migrations/20261112000004_reporte_rapido_anonimo.sql` (reporte rápido sin cuenta)
 
 ### 2.4 Configurar el inicio de sesión en Supabase
 
 En **Supabase → Authentication → URL Configuration**:
 - **Site URL:** `http://localhost:8000`
 - **Redirect URLs:** agrega `http://localhost:8000/app.html`
+
+En **Supabase → Authentication → Sign In / Providers**, activa **Allow anonymous sign-ins**.
+Lo usa el formulario "Encontré una mascota" de la página principal para que alguien reporte
+sin crear cuenta (Supabase le crea un usuario invitado, sin correo ni contraseña).
 
 ---
 
@@ -93,6 +98,8 @@ Cuando veas `Application startup complete.`, abre en el navegador:
 
 ## 4. Probar la aplicación paso a paso
 
+0. **Sin cuenta:** en http://localhost:8000, sección **Encontré una mascota**, sube una foto, marca el
+   lugar en el mapa, deja un teléfono o correo y presiona **Publicar reporte**.
 1. Entra a http://localhost:8000 y crea una cuenta en el formulario **Registro**.
 2. Si Supabase pide confirmar el correo, abre el enlace que te llega (revisa el spam).
 3. Inicia sesión en http://localhost:8000/app.html.
@@ -111,11 +118,15 @@ Cuando veas `Application startup complete.`, abre en el navegador:
 ```
 
 Necesitan internet y `backend\.env`. Crean usuarios temporales en Supabase y **los borran al terminar**
-(con sus fotos). Hay 28 pruebas:
+(con sus fotos). Hay 35 pruebas:
 
 - `test_seguridad_supabase.py`: reglas de seguridad de la base de datos (RLS).
 - `test_api.py`: la API de punta a punta.
+- `test_reporte_anonimo.py`: el reporte rápido sin cuenta y los límites de los invitados.
 - `test_frontend_e2e.py`: la página en un navegador real (Edge).
+
+Si el modo invitado está desactivado en Supabase, las pruebas del reporte sin cuenta salen
+como **skipped** (omitidas), no como aprobadas.
 
 ---
 
@@ -128,6 +139,8 @@ Necesitan internet y `backend\.env`. Crean usuarios temporales en Supabase y **l
 | La página dice "No se pudo conectar con el servidor" | el backend no está encendido (paso 3) |
 | No llega el correo de confirmación | el correo gratuito de Supabase envía muy pocos por hora: espera, o para pruebas desactiva **Authentication → Sign In / Providers → Email → Confirm email** |
 | "Correo o contraseña incorrectos" | revisa los datos o crea la cuenta primero |
+| "El reporte sin cuenta está desactivado" | activa **Allow anonymous sign-ins** (paso 2.4) |
+| "Usar mi ubicación" no funciona en el celular | el navegador solo da la ubicación en `localhost` o `https`; marca el punto en el mapa |
 | `python` no se reconoce | instala Python desde python.org y marca "Add python to PATH" |
 
 ---
@@ -139,7 +152,7 @@ proyecto_peta-ert_ia/
 ├─ index.html          página principal (landing + registro)
 ├─ app.html            aplicación
 ├─ css/                estilos (estilos.css compartido, app.css de la app)
-├─ js/                 sesion.js · registro.js · mapa.js · app.js
+├─ js/                 sesion.js · registro.js · reporte-rapido.js · mapa.js · app.js
 ├─ img/                imágenes
 ├─ backend/
 │  ├─ app/             API FastAPI (main.py, routers/, schemas.py, supabase.py…)

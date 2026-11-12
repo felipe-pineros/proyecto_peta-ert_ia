@@ -71,8 +71,10 @@ class ReportCreate(_Input):
     pet_id: str | None = Field(default=None, pattern=r"^[0-9a-fA-F-]{36}$")
     species: SpeciesCode
     breed: _txt(80) | None = None
-    color: _txt(80)
-    size: Size
+    # Obligatorios en reportes de mascota perdida; opcionales en los de encontrada
+    # (el reporte rápido sin cuenta solo pide foto, especie, ubicación y contacto).
+    color: _txt(80) | None = None
+    size: Size | None = None
     distinctive_features: _txt(1000) | None = None
     event_at: datetime
     location_label: _txt(160) | None = None
@@ -88,6 +90,8 @@ class ReportCreate(_Input):
     def _pet_by_type(self):
         if self.type == "lost" and not self.pet_id:
             raise ValueError("Un reporte de mascota perdida necesita pet_id (registra primero la mascota)")
+        if self.type == "lost" and (self.color is None or self.size is None):
+            raise ValueError("Un reporte de mascota perdida necesita color y tamaño")
         if self.type == "found" and self.pet_id:
             raise ValueError("Un reporte de mascota encontrada no lleva pet_id")
         return self

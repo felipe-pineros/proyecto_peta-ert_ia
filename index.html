@@ -7,7 +7,10 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23155E75'%3E%3Cpath d='M180-475q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29Zm109-189q-29-29-29-71t29-71q29-29 71-29t71 29q29 29 29 71t-29 71q-29 29-71 29t-71-29Zm240 0q-29-29-29-71t29-71q29-29 71-29t71 29q29 29 29 71t-29 71q-29 29-71 29t-71-29Zm251 189q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM266-75q-45 0-75.5-34.5T160-191q0-52 35.5-91t70.5-77q29-31 50-67.5t50-68.5q22-26 51-43t63-17q34 0 63 16t51 42q28 32 49.5 69t50.5 69q35 38 70.5 77t35.5 91q0 47-30.5 81.5T694-75q-54 0-107-9t-107-9q-54 0-107 9t-107 9Z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
 <link rel="stylesheet" href="css/estilos.css">
+<link rel="stylesheet" href="css/reporte-rapido.css">
 </head>
 <body>
 
@@ -52,7 +55,7 @@
             <small>Encuentra coincidencias con mascotas reportadas</small>
           </span>
         </a>
-        <a href="app.html#nuevo/found" class="action-card action-secondary">
+        <a href="#encontre" class="action-card action-secondary">
           <span class="action-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
           </span>
@@ -248,6 +251,72 @@
   </div>
 </section>
 
+<section class="encontre" id="encontre">
+  <div class="wrap form-grid">
+    <div class="form-side">
+      <div class="kicker">Encontré una mascota</div>
+      <h2>Repórtala en un minuto, sin crear cuenta</h2>
+      <p>Si viste un perro o un gato perdido en la calle, toma una foto y marca dónde está. Buscaremos si su familia ya lo reportó como perdido.</p>
+      <ol class="encontre-steps">
+        <li><span class="n">1</span> Toma o elige una foto</li>
+        <li><span class="n">2</span> Marca el lugar en el mapa</li>
+        <li><span class="n">3</span> Deja tu teléfono o correo</li>
+      </ol>
+    </div>
+
+    <form id="quick-form" novalidate>
+      <div class="full">
+        <label class="qr-photo" id="qr-photo-box" for="qr-photo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+          <strong>Tomar o elegir foto</strong>
+          <span>JPEG, PNG o WebP · máximo 10 MB</span>
+          <input id="qr-photo" name="foto" type="file" accept="image/jpeg,image/png,image/webp">
+        </label>
+        <span class="field-error" id="err-qr-photo" hidden></span>
+      </div>
+      <fieldset class="full qr-species" id="qr-species">
+        <legend>¿Qué animal es?</legend>
+        <label><input type="radio" name="qr-species" value="dog" checked> Perro</label>
+        <label><input type="radio" name="qr-species" value="cat"> Gato</label>
+      </fieldset>
+      <div class="full">
+        <div class="qr-map-bar">
+          <label for="qr-map">¿Dónde la viste?</label>
+          <button type="button" class="qr-locate" id="qr-locate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+            Usar mi ubicación
+          </button>
+        </div>
+        <div class="qr-map" id="qr-map" tabindex="0" aria-label="Mapa: toca el lugar donde viste la mascota"></div>
+        <span class="qr-hint">Toca el mapa o arrastra el marcador. Los demás solo verán una zona aproximada (~1 km).</span>
+        <span class="field-error" id="err-qr-map" hidden></span>
+      </div>
+      <div>
+        <label for="qr-phone">Teléfono o WhatsApp</label>
+        <input id="qr-phone" name="telefono" type="tel" placeholder="300 000 0000" autocomplete="tel">
+        <span class="field-error" id="err-qr-phone" hidden></span>
+      </div>
+      <div>
+        <label for="qr-email">Correo electrónico</label>
+        <input id="qr-email" name="email" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+        <span class="field-error" id="err-qr-email" hidden></span>
+      </div>
+      <div class="full" style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+        <button type="submit" class="form-submit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Publicar reporte</span>
+        </button>
+        <span class="form-note">Deja al menos uno de los dos. Tu contacto es privado: solo lo verá el dueño si confirma que es su mascota.</span>
+      </div>
+      <div class="confirm-msg" id="qr-msg" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span id="qr-msg-text"></span>
+        <button type="button" class="qr-again" id="qr-again" hidden>Reportar otra</button>
+      </div>
+    </form>
+  </div>
+</section>
+
 <section class="contacto" id="contacto">
   <div class="wrap form-grid">
     <div class="form-side">
@@ -375,8 +444,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
         integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK"
         crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+        crossorigin="anonymous"></script>
 <script src="js/sesion.js"></script>
+<script src="js/mapa.js"></script>
 <script src="js/registro.js"></script>
+<script src="js/reporte-rapido.js"></script>
 
 </body>
 </html>

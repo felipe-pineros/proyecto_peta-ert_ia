@@ -181,6 +181,70 @@ def test_landing_conserva_diseno_y_registra(server, browser):
     assert errors == []
 
 
+def test_reporte_rapido_valida_en_el_navegador(server, browser):
+    errors: list = []
+    page = new_page(browser, errors)
+    page.goto(BASE + "/")
+    assert page.get_attribute(".action-secondary", "href") == "#encontre"
+    page.click(".action-secondary")                       # "Encontré una mascota" baja a la sección
+    page.wait_for_selector("#qr-map.leaflet-container")   # el mapa se crea al acercarse
+    page.click("#quick-form .form-submit")
+    for error in ("#err-qr-photo", "#err-qr-map", "#err-qr-phone"):
+        assert page.is_visible(error), error
+    page.fill("#qr-email", "no-es-correo")
+    assert "correo válido" in page.inner_text("#err-qr-email")
+    assert errors == []
+
+
+def anonymous_enabled() -> bool:
+    r = httpx.get(f"{URL}/auth/v1/settings", headers={"apikey": PUBLISHABLE}, timeout=30)
+    return bool(r.is_success and r.json().get("external", {}).get("anonymous_users"))
+
+
+def test_reporte_rapido_sin_cuenta(server, browser, photo_file):
+    if not anonymous_enabled():
+        pytest.skip("El modo invitado está desactivado: activa 'Allow anonymous sign-ins' en Supabase")
+    errors: list = []
+    page = new_page(browser, errors)
+    guest: dict = {}
+
+    def remember_guest(response):
+        if "/auth/v1/signup" in response.url and response.ok:
+            guest["id"] = response.json()["user"]["id"]
+
+    page.on("response", remember_guest)
+    try:
+        page.goto(BASE + "/#encontre")
+        page.wait_for_selector("#qr-map.leaflet-container")
+        page.set_input_files("#qr-photo", str(photo_file))
+        page.wait_for_selector("#qr-photo-box img.preview")
+        page.click("#qr-map", position={"x": 260, "y": 120})
+        page.wait_for_selector("#qr-map .leaflet-marker-icon")
+        page.click("label:has(input[value='cat'])")
+        page.fill("#qr-phone", "300 765 4321")
+        page.click("#quick-form .form-submit")
+        page.wait_for_selector("#qr-msg >> text=Gracias por ayudar", timeout=60_000)
+        assert guest.get("id"), "no se creó la sesión de invitado"
+
+        rows = httpx.get(f"{URL}/rest/v1/reports", headers=admin_headers(), timeout=30, params={
+            "select": "type,status,species,color", "user_id": f"eq.{guest['id']}"}).json()
+        assert rows == [{"type": "found", "status": "active", "species": "cat", "color": None}]
+
+        # Con la sesión de invitado, la app pide iniciar sesión (no muestra reportes ajenos).
+        page.goto(f"{BASE}/app.html")
+        page.wait_for_selector("#auth-view:not([hidden])")
+        assert errors == []
+    finally:
+        if guest.get("id"):
+            r = httpx.get(f"{URL}/rest/v1/report_photos", headers=admin_headers(), timeout=30,
+                          params={"select": "storage_path", "user_id": f"eq.{guest['id']}"})
+            paths = [p["storage_path"] for p in r.json()] if r.is_success else []
+            if paths:
+                httpx.request("DELETE", f"{URL}/storage/v1/object/{PHOTO_BUCKET}", headers=admin_headers(),
+                              json={"prefixes": paths}, timeout=30)
+            httpx.delete(f"{URL}/auth/v1/admin/users/{guest['id']}", headers=admin_headers(), timeout=30)
+
+
 def test_login_con_clave_incorrecta(server, browser, users):
     errors: list = []
     page = new_page(browser, errors)

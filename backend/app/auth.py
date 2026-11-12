@@ -18,6 +18,8 @@ class User:
     id: str
     email: str | None
     token: str
+    # Invitado creado por el reporte rápido de la página principal (sin correo ni contraseña).
+    is_anonymous: bool = False
 
 
 async def require_user(authorization: str | None = Header(default=None)) -> User:
@@ -39,6 +41,7 @@ async def require_user(authorization: str | None = Header(default=None)) -> User
         raise HTTPException(status_code=401, detail="Sesión no válida o vencida")
     try:
         data = response.json()
-        return User(id=str(data["id"]), email=data.get("email"), token=token)
+        return User(id=str(data["id"]), email=data.get("email") or None, token=token,
+                    is_anonymous=bool(data.get("is_anonymous", False)))
     except (ValueError, KeyError, TypeError) as exc:
         raise HTTPException(status_code=401, detail="Sesión no válida") from exc

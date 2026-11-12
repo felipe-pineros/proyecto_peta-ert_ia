@@ -22,6 +22,8 @@ async def list_pets(user: User = Depends(require_user)):
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_pet(body: PetCreate, user: User = Depends(require_user)):
+    if user.is_anonymous:  # la base también lo impide (migración 4)
+        raise HTTPException(status_code=403, detail="Para registrar una mascota crea una cuenta")
     rows = await supabase.db("POST", "pets", token=user.token,
                              params={"select": PET_COLS}, json=body.model_dump(exclude_none=True))
     return rows[0]

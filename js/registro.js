@@ -98,6 +98,6 @@
   // Si ya hay sesión, el enlace del menú dice "Mi cuenta".
   window.PetAlert.getSession().then((session) => {
     const link = document.getElementById('nav-login');
-    if (session && link) link.textContent = 'Mi cuenta';
+    if (session && link && !window.PetAlert.isAnonymous(session)) link.textContent = 'Mi cuenta';
   }).catch(() => { /* sin servidor: la landing sigue funcionando */ });
 })();

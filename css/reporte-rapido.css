@@ -1,0 +1,59 @@
+/* PET Alert · Sección "Encontré una mascota" (reporte rápido sin cuenta) de index.html.
+   Reutiliza las variables y los estilos de formulario de estilos.css. */
+.encontre{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+.encontre .form-side p{color:var(--ink-soft); margin-bottom:16px;}
+.encontre-steps{display:grid; gap:10px; margin-top:8px;}
+.encontre-steps li{display:flex; gap:12px; align-items:center; color:var(--ink); font-size:0.92rem;}
+.encontre-steps .n{
+  width:28px; height:28px; border-radius:50%; flex-shrink:0;
+  display:grid; place-items:center; font-weight:700; font-size:0.85rem;
+  background:rgba(42,157,143,0.14); color:var(--teal-dark);
+}
+
+/* Foto: zona grande para tocar (en el celular abre la cámara o la galería). */
+.qr-photo{
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  min-height:180px; border:2px dashed var(--line); border-radius:18px; background:var(--bg);
+  color:var(--ink-soft); cursor:pointer; text-align:center; padding:16px; overflow:hidden;
+  transition:border-color .15s ease, background .15s ease;
+}
+.qr-photo:hover, .qr-photo:focus-within{border-color:var(--teal); background:rgba(42,157,143,0.06);}
+.qr-photo.invalid{border-color:var(--coral);}
+.qr-photo svg{width:38px; height:38px; color:var(--teal-dark);}
+.qr-photo strong{color:var(--teal-dark); font-size:1rem;}
+.qr-photo input{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;}
+.qr-photo img.preview{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+.qr-photo .change{
+  position:absolute; bottom:10px; right:10px; z-index:1; background:rgba(18,50,64,0.78); color:var(--white);
+  font-size:0.78rem; font-weight:600; padding:6px 12px; border-radius:999px; pointer-events:none;
+}
+
+/* Especie: dos botones grandes. */
+.qr-species{display:grid; grid-template-columns:1fr 1fr; gap:10px; border:none;}
+.qr-species legend{font-size:0.85rem; font-weight:600; margin-bottom:7px; color:var(--ink);}
+.qr-species label{
+  display:flex; align-items:center; justify-content:center; gap:8px; margin:0;
+  padding:12px; border:1.5px solid var(--line); border-radius:12px; background:var(--white);
+  font-size:0.95rem; font-weight:600; color:var(--ink); cursor:pointer;
+}
+.qr-species input{width:auto; accent-color:var(--teal-dark);}
+.qr-species label:has(input:checked){border-color:var(--teal-dark); background:rgba(21,94,117,0.07); color:var(--teal-dark);}
+
+/* Mapa */
+.qr-map{height:260px; border-radius:16px; overflow:hidden; border:1.5px solid var(--line); z-index:0;}
+.qr-map.invalid{border-color:var(--coral);}
+.qr-map-bar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;}
+.qr-map-bar label{margin:0;}
+.qr-locate{
+  display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:999px;
+  background:rgba(21,94,117,0.08); color:var(--teal-dark); font-size:0.85rem; font-weight:600;
+}
+.qr-locate:hover{background:rgba(21,94,117,0.15);}
+.qr-locate svg{width:16px; height:16px;}
+.qr-hint{display:block; font-size:0.78rem; color:var(--ink-soft); margin-top:6px;}
+
+.qr-again{
+  margin-left:auto; padding:8px 16px; border-radius:999px; border:1.5px solid var(--teal-dark);
+  color:var(--teal-dark); font-weight:600; font-size:0.85rem; background:var(--white);
+}
+.qr-again[hidden]{display:none;}

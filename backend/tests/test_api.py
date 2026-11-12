@@ -143,7 +143,8 @@ def test_salud_y_frontend_sin_exponer_archivos(api):
     home = api.get("/")
     assert home.status_code == 200 and "text/html" in home.headers["content-type"]
     assert api.get("/img/logo.png").status_code == 200
-    for archivo in ("/app.html", "/css/estilos.css", "/css/app.css", "/js/app.js", "/js/sesion.js"):
+    for archivo in ("/app.html", "/css/estilos.css", "/css/app.css", "/css/reporte-rapido.css",
+                    "/js/app.js", "/js/sesion.js", "/js/mapa.js", "/js/reporte-rapido.js"):
         assert api.get(archivo).status_code == 200, archivo
     for secreto in ("/backend/.env", "/.env", "/backend/app/config.py", "/img/../backend/.env",
                     "/js/../backend/.env", "/PROGRESO.md", "/supabase/migrations"):

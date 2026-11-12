@@ -205,7 +205,7 @@ Se notifica solo si `total ≥ umbral` y la pareja es nueva.
 | profiles | el propio usuario | el propio usuario |
 | species | todos los usuarios con sesión | nadie desde la app (solo migraciones) |
 | pets | el dueño | el dueño |
-| reports | el dueño (todos sus reportes), y cualquier usuario **con sesión** si está `active` (D1) | el dueño, solo campos descriptivos; **el estado solo cambia mediante funciones del backend** |
+| reports | el dueño (todos sus reportes), y cualquier usuario **con sesión y cuenta** (no invitado, D5) si está `active` (D1) | el dueño, solo campos descriptivos; **el estado solo cambia mediante funciones del backend** |
 | report_private | el dueño | el dueño |
 | report_photos | el dueño, y otros usuarios si el reporte está `active` | solo el backend |
 | photo_embeddings | nadie desde el navegador | solo el backend |
@@ -252,6 +252,7 @@ proyecto_peta-ert_ia/
 ├─ index.html, img/            (landing, se conserva su diseño)
 ├─ app.html                    (aplicación: login, reportes, mapa, coincidencias, avisos) — etapa 5
 ├─ css/  estilos.css (CSS original de index.html, compartido) · app.css
+├─ css/  reporte-rapido.css · js/ reporte-rapido.js  (formulario "Encontré una mascota", D5)
 ├─ js/   sesion.js · registro.js · mapa.js · app.js
 ├─ backend/
 │  ├─ app/  main.py, config.py, auth.py, routers/, services/
@@ -274,3 +275,9 @@ proyecto_peta-ert_ia/
   - Al guardar, el backend redondea las coordenadas públicas a ~1 km y guarda las exactas en `report_private`.
   - Antes de instalar Leaflet (etapa 5) se verificarán su versión y licencia (BSD-2), y la política de uso de los mapas de OpenStreetMap.
 - **D4 — Fotos:** máximo **5 fotos por reporte**.
+- **D5 — Reporte rápido sin cuenta (aprobada por Daniela, 2026-11-12):** quien encuentra una mascota puede reportarla desde la página principal **sin registrarse**, con foto, especie, ubicación y un teléfono o correo.
+  - Técnica: **usuario anónimo de Supabase Auth** (`signInAnonymously`; su token lleva `is_anonymous = true`). Así cada reporte sigue teniendo dueño y no cambian las reglas anteriores.
+  - Límites para invitados (migración 4 + backend): solo reportes `found`; no registran mascotas; deben dejar contacto para publicar; **no ven reportes ni fotos ajenos** (D1 se mantiene) y no usan `app.html`.
+  - En los reportes `found`, `color` y `size` pasan a ser opcionales (en `lost` siguen obligatorios).
+  - El dueño de la mascota perdida confirma (D2) y entonces ve el contacto del invitado.
+  - Riesgos aceptados para el prototipo: los usuarios anónimos se acumulan (limpieza pendiente) y el spam solo lo frena el límite de Supabase (~30 invitados/hora por IP). Antes de la nube: añadir CAPTCHA (Turnstile/hCaptcha).

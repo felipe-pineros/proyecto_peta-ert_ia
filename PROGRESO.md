@@ -1,6 +1,6 @@
 # Progreso — PET Alert
 
-Última actualización: 2026-11-10
+Última actualización: 2026-11-12
 
 ## Etapas
 | # | Etapa | Estado |
@@ -50,14 +50,32 @@
   - Sin `innerHTML` con datos de usuarios (evita XSS).
   - 5 pruebas en navegador real (`backend/tests/test_frontend_e2e.py`, Playwright + Edge de Windows). **28/28 pruebas pasan** (2026-11-10). Capturas revisadas en escritorio y celular.
 
+- **Ajuste de la etapa 5: reporte rápido sin cuenta (decisión D5, 2026-11-12). EN VERIFICACIÓN.**
+  - Pedido por Daniela: quien encuentra una mascota la reporta desde la página principal sin registrarse.
+  - `index.html`: nueva sección "Encontré una mascota" (foto, Perro/Gato, mapa con "Usar mi ubicación", teléfono o correo). La tarjeta del inicio baja a esa sección. Archivos: `css/reporte-rapido.css` y `js/reporte-rapido.js`.
+  - Usa un usuario **anónimo** de Supabase. Migración 4 (`20261112000004_reporte_rapido_anonimo.sql`):
+    - color y tamaño pasan a ser opcionales en reportes encontrados;
+    - los invitados solo crean reportes encontrados, deben dejar contacto y no ven reportes ajenos.
+  - Backend: `User.is_anonymous`; la API responde 403/422 con mensajes claros a los invitados.
+  - Pruebas: 29 pasan. **6 nuevas salen omitidas** hasta aplicar la migración 4 y activar el modo invitado (2026-11-12).
+
 ## Pendiente
 - **Etapa 6 (siguiente):** evaluación del modelo de IA (necesita las fotos de evaluación).
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
 - El registro real envía un correo de confirmación; el correo gratuito de Supabase permite muy pocos por hora (para la demo puede convenir configurar SMTP propio o desactivar la confirmación en Auth).
 - Las coincidencias aún no se crean solas: el motor es de la etapa 7. Hoy solo existen si se insertan a mano (así lo hacen las pruebas).
 - Las notificaciones de `new_match` las creará el motor (etapas 7–8).
+- Reporte sin cuenta:
+  - el invitado no recibe avisos dentro de la app; el dueño lo contacta tras confirmar;
+  - falta CAPTCHA contra spam antes de la nube (etapa 10);
+  - falta limpiar los usuarios anónimos viejos;
+  - falta la opción "convertir mi reporte de invitado en cuenta".
 
 ## Bloqueado / depende de ti
+- **Reporte sin cuenta (D5):**
+  1. Ejecutar `supabase/migrations/20261112000004_reporte_rapido_anonimo.sql` en el SQL Editor.
+  2. Activar **Authentication → Sign In / Providers → Allow anonymous sign-ins**.
+  3. Después: correr las pruebas (deben pasar 35, sin omitidas).
 - **Docker Desktop no está instalado** (necesario en la etapa 9). Instalar con los datos en `D:`, porque `C:` tiene ~8,6 GB libres.
 - **Fotos de evaluación** (etapa 6): varias fotos de los mismos animales, con permiso de sus dueños.
 - **`git push`:** Felipe ya aprobó subir a `master`, pero GitHub responde 403: la cuenta `dakina20` no tiene permiso de escritura en `felipe-pineros/proyecto_peta-ert_ia`. Felipe debe agregarla como colaboradora (Settings → Collaborators) y Daniela aceptar la invitación. Luego: `git push origin master`.
@@ -70,9 +88,10 @@
 - D2: solo el dueño de la mascota perdida confirma una coincidencia; cualquiera de los dos puede descartarla.
 - D3: la ubicación se marca en un mapa (Leaflet + OpenStreetMap).
 - D4: máximo 5 fotos por reporte.
+- D5: reporte rápido de mascota encontrada sin cuenta (usuario anónimo de Supabase). Los invitados no ven reportes ajenos.
 
 ## Cómo verificar
-- Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v` → deben pasar las 28 pruebas (necesita internet, `backend/.env` y Microsoft Edge).
+- Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 35 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
 - Arrancar el servidor: `.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload` y abrir http://localhost:8000/docs (lista de rutas de la API) o http://localhost:8000 (frontend).
 - Etapa 2:
   - `git status` muestra `node_modules` como eliminado del índice y `ls node_modules` sigue funcionando.

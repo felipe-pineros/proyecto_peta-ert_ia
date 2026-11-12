@@ -845,7 +845,9 @@
       if (event === 'SIGNED_OUT') show('auth-view');
     });
     const session = await getSession();
-    if (session) await enterApp();
+    // Un invitado (reporte rápido sin cuenta) no usa la app: debe iniciar sesión o crear cuenta.
+    // signInWithPassword reemplaza la sesión de invitado.
+    if (session && !window.PetAlert.isAnonymous(session)) await enterApp();
     else show('auth-view');
   }
 
