@@ -67,6 +67,11 @@
   - **36/36 pruebas pasan** (2026-11-12).
   - Falta (al publicar en la nube, etapa 10): dominio, `PUBLIC_SITE_URL` y registrar el sitio en Google Search Console.
 
+- **Botones para difundir en redes (2026-11-12):**
+  - `js/compartir.js` y `css/compartir.css`. En el detalle de un reporte publicado y al terminar el reporte rápido aparecen: Compartir (menú del celular, con la foto), WhatsApp, Facebook y Copiar texto.
+  - El texto solo lleva datos públicos (especie, color, tamaño, fecha y lugar escrito). **Nunca** el teléfono, el correo ni el punto exacto; las pruebas lo comprueban.
+  - El enlace lleva a la página principal, porque los reportes requieren sesión (D1).
+  - **36/36 pruebas pasan.** Capturas revisadas en escritorio y celular.
 - **Etapa 6 (en curso, 2026-11-12): herramientas de evaluación.**
   - `evaluacion/evaluar.py` tiene tres comandos:
     - `verificar`: revisa las fotos;
