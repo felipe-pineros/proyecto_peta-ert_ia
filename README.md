@@ -126,7 +126,7 @@ Cuando veas `Application startup complete.`, abre en el navegador:
 ```
 
 Necesitan internet y `backend\.env`. Crean usuarios temporales en Supabase y **los borran al terminar**
-(con sus fotos). Hay 44 pruebas:
+(con sus fotos). Hay 46 pruebas:
 
 - `test_seguridad_supabase.py`: reglas de seguridad de la base de datos (RLS).
 - `test_api.py`: la API de punta a punta.
@@ -148,6 +148,8 @@ como **skipped** (omitidas), no como aprobadas.
 | La página dice "No se pudo conectar con el servidor" | el backend no está encendido (paso 3) |
 | No llega el correo de confirmación | el correo gratuito de Supabase envía muy pocos por hora: espera, o para pruebas desactiva **Authentication → Sign In / Providers → Email → Confirm email** |
 | "Correo o contraseña incorrectos" | revisa los datos o crea la cuenta primero |
+| "La IA está ocupada en este momento" | el plan gratuito de Gemini está saturado (es pasajero): espera un minuto o llena los datos a mano |
+| Cambiaste `backend\.env` y no se nota | `--reload` solo vigila el código: apaga el servidor (`Ctrl + C`) y enciéndelo otra vez |
 | "El reporte sin cuenta está desactivado" | activa **Allow anonymous sign-ins** (paso 2.4) |
 | "Usar mi ubicación" no funciona en el celular | el navegador solo da la ubicación en `localhost` o `https`; marca el punto en el mapa |
 | `python` no se reconoce | instala Python desde python.org y marca "Add python to PATH" |

@@ -72,7 +72,7 @@
   - El texto solo lleva datos públicos (especie, color, tamaño, fecha y lugar escrito). **Nunca** el teléfono, el correo ni el punto exacto; las pruebas lo comprueban.
   - El enlace lleva a la página principal, porque los reportes requieren sesión (D1).
   - **36/36 pruebas pasan.** Capturas revisadas en escritorio y celular.
-- **Leer anuncios de redes con Gemini (decisión D6, 2026-11-12). Pendiente de probar con la clave real.**
+- **Leer anuncios de redes con Gemini (decisión D6, 2026-11-12). Probado con la clave real ✅.**
   - En el formulario rápido, el bloque plegable "¿Lo viste en un anuncio de redes?": se pega el texto y la IA llena especie, color, tamaño, raza, señas, lugar y fecha. La persona lo revisa antes de publicar.
   - Backend `app/anuncios.py` + `POST /api/ads/extract`:
     - plan gratuito, solo texto;
@@ -81,7 +81,11 @@
     - máximo 10 por persona por hora;
     - la clave solo vive en `backend/.env`.
   - Solo aparece si hay `GEMINI_API_KEY`; sin ella, el formulario funciona igual.
-  - Pruebas: **44/44 pasan**. 8 nuevas en `test_anuncios.py`, más el flujo completo en Edge. **Gemini está SIMULADO** en las pruebas: la conexión real con Google aún no se ha probado.
+  - Pruebas automáticas: **46/46 pasan**. 10 están en `test_anuncios.py`, más el flujo completo en Edge. En ellas Gemini está **simulado**, para no gastar cuota.
+  - **Prueba real con Google (2026-11-12, modelo `gemini-3.5-flash-lite`):**
+    - un anuncio de ejemplo, enviado por `POST /api/ads/extract` con una sesión de invitado, respondió en ~4 s con los datos correctos: gato, gris atigrado, pequeño, collar azul y oreja doblada, calle 72 con carrera 11, fecha de hoy;
+    - se borraron 2 datos de contacto antes de enviarlo.
+  - Hallazgo: el plan gratuito a veces responde **503 "high demand"** (modelo saturado). Es pasajero, así que el backend reintenta 2 veces. Si sigue saturado, dice "La IA está ocupada… intenta en un minuto o llena los datos a mano".
 - **Etapa 6 (en curso, 2026-11-12): herramientas de evaluación.**
   - `evaluacion/evaluar.py` tiene tres comandos:
     - `verificar`: revisa las fotos;
@@ -109,7 +113,7 @@
   - falta la opción "convertir mi reporte de invitado en cuenta".
 
 ## Bloqueado / depende de ti
-- **Gemini (D6):** crear una clave gratis en https://aistudio.google.com/apikey (con tu cuenta de Google) y pegarla en `backend/.env` como `GEMINI_API_KEY=...`. Luego avisar para probar la conexión real.
+- ~~Clave de Gemini~~ → **resuelto el 2026-11-12**: la clave está en `backend/.env` y la conexión real funciona.
 - **Docker Desktop no está instalado** (necesario en la etapa 9). Instalar con los datos en `D:`, porque `C:` tiene ~8,6 GB libres.
 - **Fotos de evaluación** (etapa 6): varias fotos de los mismos animales, con permiso de sus dueños.
 - ~~`git push` bloqueado (403)~~ → **resuelto el 2026-11-12**: todo está subido a `origin/master`.
@@ -126,7 +130,7 @@
 - D6: leer el texto de anuncios de redes con Gemini (opcional, plan gratuito, solo texto y sin datos de contacto).
 
 ## Cómo verificar
-- Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 44 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
+- Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 46 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
 - Etapa 6: `.\backend\.venv\Scripts\python.exe -m pytest evaluacion -q` (4 pruebas) y `.\backend\.venv\Scripts\python.exe evaluacion\evaluar.py verificar`.
 - Arrancar el servidor: `.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload` y abrir http://localhost:8000/docs (lista de rutas de la API) o http://localhost:8000 (frontend).
 - Etapa 2:

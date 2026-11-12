@@ -286,5 +286,6 @@ proyecto_peta-ert_ia/
   - Es un extra **opcional**: solo aparece si `GEMINI_API_KEY` está en `backend/.env`. El requisito general ("no se necesita LLM generativo") se mantiene: el núcleo (coincidencias) no depende de Gemini.
   - **Plan gratuito** de la API de Gemini: Google puede usar y leer lo que se envía. Por eso solo se envía texto (nunca fotos ni capturas) y el backend **borra teléfonos, correos, enlaces y @usuarios antes de enviarlo** (`backend/app/anuncios.py`).
   - Llamada desde el backend (`POST /api/ads/extract`, requiere sesión, máximo 10 por persona por hora). La clave nunca llega al navegador.
+  - El plan gratuito a veces responde 503 "high demand" (visto en la prueba real del 2026-11-12). El backend reintenta 2 veces, con 1 s y 2 s de pausa. Si sigue fallando, pide intentar luego o llenar a mano. El 429 (cuota agotada) no se reintenta.
   - La respuesta tiene un formato fijo (JSON con valores permitidos) y se valida. El texto del anuncio se trata como datos, no como instrucciones. Nada se publica sin que la persona lo revise.
   - No se pueden leer automáticamente las redes: Facebook cerró el acceso a grupos (2024), y el scraping viola sus condiciones y la Ley 1581 de 2012.
