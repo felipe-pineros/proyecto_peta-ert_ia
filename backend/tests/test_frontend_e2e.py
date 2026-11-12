@@ -194,6 +194,9 @@ def test_reporte_rapido_valida_en_el_navegador(server, browser):
         assert page.is_visible(error), error
     page.fill("#qr-email", "no-es-correo")
     assert "correo válido" in page.inner_text("#err-qr-email")
+    # Sin GEMINI_API_KEY en el servidor, la opción de leer anuncios no aparece.
+    if not page.evaluate("() => fetch('/api/config').then(r => r.json()).then(c => c.features.read_ad)"):
+        assert page.is_hidden("#qr-ad")
     assert errors == []
 
 
@@ -214,14 +217,37 @@ def test_reporte_rapido_sin_cuenta(server, browser, photo_file):
             guest["id"] = response.json()["user"]["id"]
 
     page.on("response", remember_guest)
+
+    # "Leer anuncio de redes": se simula que el servidor tiene Gemini y su respuesta
+    # (así no se llama a Google). Todo lo demás es real.
+    def config_with_ai(route):
+        data = route.fetch().json()
+        data["features"] = {"read_ad": True}
+        route.fulfill(json=data)
+
+    sent_ads = []
+
+    def fake_extract(route):
+        sent_ads.append(json.loads(route.request.post_data))
+        route.fulfill(json={"type": "found", "species": "cat", "breed": None, "color": "gris atigrado",
+                            "size": "small", "distinctive_features": "collar azul", "location_label": "Parque de Usaquén",
+                            "event_date": None, "contact_data_removed": 1})
+
+    page.route("**/api/config", config_with_ai)
+    page.route("**/api/ads/extract", fake_extract)
     try:
         page.goto(BASE + "/#encontre")
         page.wait_for_selector("#qr-map.leaflet-container")
+        page.click("#qr-ad summary")
+        page.fill("#qr-ad-text", "Encontré gatito gris atigrado con collar azul en el Parque de Usaquén. Llamar 300 111 2222")
+        page.click("#qr-ad-btn")
+        page.wait_for_selector("#qr-ad-result:not([hidden]) >> text=gris atigrado")
+        assert page.is_checked("input[name='qr-species'][value='cat']")  # la IA eligió "Gato"
+        assert sent_ads and "Usaquén" in sent_ads[0]["text"]
         page.set_input_files("#qr-photo", str(photo_file))
         page.wait_for_selector("#qr-photo-box img.preview")
         page.click("#qr-map", position={"x": 260, "y": 120})
         page.wait_for_selector("#qr-map .leaflet-marker-icon")
-        page.click("label:has(input[value='cat'])")
         page.fill("#qr-phone", "300 246 1357")
         page.click("#quick-form .form-submit")
         page.wait_for_selector("#qr-msg >> text=Gracias por ayudar", timeout=60_000)
@@ -229,11 +255,14 @@ def test_reporte_rapido_sin_cuenta(server, browser, photo_file):
         # Botones para difundir: el texto NO lleva el teléfono de quien reportó.
         page.wait_for_selector("#qr-share:not([hidden]) .share-whatsapp")
         wa = unquote(page.get_attribute("#qr-share .share-whatsapp", "href"))
-        assert "Se encontró un gato" in wa and "246" not in wa and "1357" not in wa
+        assert "Se encontró un gato (gris atigrado, pequeño)" in wa and "246" not in wa and "1357" not in wa
 
+        # El reporte guardado lleva los datos que entendió la IA.
         rows = httpx.get(f"{URL}/rest/v1/reports", headers=admin_headers(), timeout=30, params={
-            "select": "type,status,species,color", "user_id": f"eq.{guest['id']}"}).json()
-        assert rows == [{"type": "found", "status": "active", "species": "cat", "color": None}]
+            "select": "type,status,species,color,size,distinctive_features,location_label",
+            "user_id": f"eq.{guest['id']}"}).json()
+        assert rows == [{"type": "found", "status": "active", "species": "cat", "color": "gris atigrado",
+                         "size": "small", "distinctive_features": "collar azul", "location_label": "Parque de Usaquén"}]
 
         # Con la sesión de invitado, la app pide iniciar sesión (no muestra reportes ajenos).
         page.goto(f"{BASE}/app.html")

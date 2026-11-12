@@ -57,3 +57,18 @@
   color:var(--teal-dark); font-weight:600; font-size:0.85rem; background:var(--white);
 }
 .qr-again[hidden]{display:none;}
+
+/* Leer un anuncio de redes con IA (opcional; solo aparece si el servidor tiene Gemini configurado). */
+.qr-ad{border:1.5px solid var(--line); border-radius:16px; background:var(--bg);}
+.qr-ad[hidden]{display:none;}
+.qr-ad summary{cursor:pointer; padding:14px 16px; font-weight:600; font-size:0.9rem; color:var(--teal-dark);}
+.qr-ad-body{display:grid; gap:8px; padding:0 16px 16px;}
+.qr-ad-body .qr-locate{justify-self:start;}
+.qr-ad-result{background:var(--white); border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:0.88rem;}
+.qr-ad-result[hidden]{display:none;}
+.qr-ad-result dl{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:6px 0 10px;}
+.qr-ad-result dt{font-weight:600; color:var(--ink-soft);}
+.qr-ad-result p{margin-top:8px;}
+.qr-ad-result .warn{color:#9a3412; font-weight:500;}
+.qr-ad-result .link{margin-top:10px;}
+.qr-ad-result .link{color:var(--teal-dark); font-weight:600; text-decoration:underline; padding:0;}

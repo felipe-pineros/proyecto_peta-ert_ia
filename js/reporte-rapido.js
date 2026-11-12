@@ -168,6 +168,104 @@
     if (error) throw new Error(authMessage(error));
   }
 
+  // ---------------------------------------------------------------- leer anuncio de redes (IA)
+  // Solo aparece si el servidor tiene Gemini configurado. Lo que entiende la IA se muestra
+  // para que la persona lo revise y se guarda en el reporte (color, tamaño, lugar, señas).
+  const adBox = $('qr-ad');
+  const adText = $('qr-ad-text');
+  const adBtn = $('qr-ad-btn');
+  const adResult = $('qr-ad-result');
+  const SIZE_ES = { small: 'Pequeño', medium: 'Mediano', large: 'Grande' };
+  let adData = null;
+
+  window.PetAlert.features().then((f) => { if (f.read_ad) adBox.hidden = false; }).catch(() => {});
+
+  function clearAd() {
+    adData = null;
+    adResult.hidden = true;
+    adResult.replaceChildren();
+  }
+
+  function showAd(d) {
+    adResult.replaceChildren();
+    const add = (tag, text, cls) => {
+      const node = document.createElement(tag);
+      node.textContent = text;
+      if (cls) node.className = cls;
+      return node;
+    };
+    adResult.append(add('strong', 'Esto entendimos del anuncio (revísalo):'));
+    const dl = document.createElement('dl');
+    const row = (k, v) => { if (v) dl.append(add('dt', k), add('dd', v)); };
+    row('Animal', { dog: 'Perro', cat: 'Gato', other: 'Otro' }[d.species]);
+    row('Color', d.color);
+    row('Tamaño', SIZE_ES[d.size]);
+    row('Raza', d.breed);
+    row('Señas', d.distinctive_features);
+    row('Lugar', d.location_label);
+    row('Fecha', d.event_date);
+    if (dl.childElementCount) adResult.append(dl);
+    else adResult.append(add('p', 'No encontramos datos de la mascota en ese texto.'));
+    if (d.type === 'lost') {
+      adResult.append(add('p', 'Este anuncio parece de alguien que PERDIÓ su mascota. Publica aquí solo si tú la viste ' +
+        'o la tienes; si no, compártele a esa persona el enlace de PetAlert.', 'warn'));
+    }
+    if (d.species === 'other') adResult.append(add('p', 'Por ahora solo se pueden reportar perros y gatos.', 'warn'));
+    if (d.location_label) {
+      adResult.append(add('p', 'Marca en el mapa el lugar donde la viste (el texto del lugar se guardará como referencia).'));
+    }
+    if (d.contact_data_removed) {
+      adResult.append(add('p', 'Quitamos ' + d.contact_data_removed + ' dato(s) de contacto antes de enviarlo a la IA.'));
+    }
+    const discard = add('button', 'No usar estos datos', 'link');
+    discard.type = 'button';
+    discard.addEventListener('click', clearAd);
+    adResult.append(discard);
+    adResult.hidden = false;
+  }
+
+  adBtn.addEventListener('click', async () => {
+    const text = adText.value.trim();
+    const errorEl = $('err-qr-ad');
+    errorEl.hidden = true;
+    if (text.length < 15) {
+      errorEl.textContent = 'Pega el texto completo del anuncio.';
+      errorEl.hidden = false;
+      return;
+    }
+    adBtn.disabled = true;
+    adBtn.textContent = 'Leyendo…';
+    try {
+      await ensureSession();
+      const d = await api('/api/ads/extract', { method: 'POST', body: { text } });
+      adData = d;
+      if (d.species === 'dog' || d.species === 'cat') {
+        form.querySelector('input[name="qr-species"][value="' + d.species + '"]').checked = true;
+      }
+      showAd(d);
+    } catch (err) {
+      errorEl.textContent = err.message || 'No se pudo leer el anuncio.';
+      errorEl.hidden = false;
+    } finally {
+      adBtn.disabled = false;
+      adBtn.textContent = 'Leer anuncio';
+    }
+  });
+
+  // Datos del anuncio que van en el reporte (solo los que la API acepta).
+  function adFields() {
+    if (!adData) return {};
+    const out = {};
+    for (const k of ['color', 'size', 'breed', 'distinctive_features', 'location_label']) {
+      if (adData[k]) out[k] = adData[k];
+    }
+    if (adData.event_date) {
+      const at = new Date(adData.event_date + 'T12:00:00');
+      if (!Number.isNaN(at.getTime()) && at < new Date()) out.event_at = at.toISOString();
+    }
+    return out;
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     msg.style.display = 'none';
@@ -183,6 +281,7 @@
         event_at: new Date().toISOString(),
         lat: point.lat,
         lng: point.lng,
+        ...adFields(),
       };
       if (phone.value.trim()) body.contact_phone = phone.value.trim();
       if (email.value.trim()) body.contact_email = email.value.trim();
@@ -216,6 +315,7 @@
     form.reset();
     form.querySelectorAll('input, button.qr-locate').forEach((f) => { f.disabled = false; });
     clearPreview();
+    clearAd();
     msg.style.display = 'none';
     shareBox.hidden = true;
     setLoading(false, 'Publicar reporte');

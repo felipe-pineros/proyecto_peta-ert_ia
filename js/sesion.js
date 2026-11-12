@@ -8,6 +8,7 @@
   'use strict';
 
   let clientPromise = null;
+  let config = null;
 
   function getClient() {
     if (!clientPromise) {
@@ -16,6 +17,7 @@
           if (!r.ok) throw new Error('No se pudo cargar la configuración del servidor');
           return r.json();
         })
+        .then((cfg) => { config = cfg; return cfg; })
         .then((cfg) => window.supabase.createClient(cfg.supabase_url, cfg.supabase_publishable_key, {
           auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
         }))
@@ -96,5 +98,11 @@
     return Boolean(session && session.user && session.user.is_anonymous);
   }
 
-  window.PetAlert = { getClient, getSession, api, ApiError, authMessage, isAnonymous };
+  // Funciones opcionales que el servidor tiene activas (p. ej. { read_ad: true }).
+  async function features() {
+    await getClient();
+    return (config && config.features) || {};
+  }
+
+  window.PetAlert = { getClient, getSession, api, ApiError, authMessage, isAnonymous, features };
 })();

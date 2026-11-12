@@ -287,6 +287,17 @@
     </div>
 
     <form id="quick-form" novalidate>
+      <details class="full qr-ad" id="qr-ad" hidden>
+        <summary>¿Lo viste en un anuncio de redes? Pega el texto y llenamos los datos</summary>
+        <div class="qr-ad-body">
+          <label for="qr-ad-text">Texto del anuncio</label>
+          <textarea id="qr-ad-text" maxlength="3000" placeholder="Pega aquí el texto de la publicación de Facebook, Instagram o WhatsApp…"></textarea>
+          <span class="qr-hint">Solo se envía el texto (nunca fotos) a la IA de Google (Gemini). Antes borramos teléfonos, correos y enlaces. Revisa siempre lo que entendió.</span>
+          <span class="field-error" id="err-qr-ad" hidden></span>
+          <button type="button" class="qr-locate" id="qr-ad-btn">Leer anuncio</button>
+          <div class="qr-ad-result" id="qr-ad-result" hidden></div>
+        </div>
+      </details>
       <div class="full">
         <label class="qr-photo" id="qr-photo-box" for="qr-photo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
