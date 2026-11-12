@@ -52,6 +52,11 @@ python -m venv backend\.venv
    - `SUPABASE_PUBLISHABLE_KEY`: la clave pública (`sb_publishable_...`).
    - `SUPABASE_SECRET_KEY`: la clave secreta (`sb_secret_...`).
 
+Opcional: `GEMINI_API_KEY`, para la opción "¿Lo viste en un anuncio de redes?" del formulario rápido.
+Se crea gratis en [Google AI Studio](https://aistudio.google.com/apikey). Sin ella, esa opción no aparece.
+En el plan gratuito Google puede usar lo que se envía; por eso solo se envía texto y antes se borran
+teléfonos, correos y enlaces.
+
 Opcional: `PUBLIC_SITE_URL` (la dirección pública, p. ej. `https://tu-dominio.com`). En tu computador
 déjala vacía; en la nube es la que aparece en Google y en la vista previa al compartir el enlace.
 
@@ -121,11 +126,12 @@ Cuando veas `Application startup complete.`, abre en el navegador:
 ```
 
 Necesitan internet y `backend\.env`. Crean usuarios temporales en Supabase y **los borran al terminar**
-(con sus fotos). Hay 36 pruebas:
+(con sus fotos). Hay 44 pruebas:
 
 - `test_seguridad_supabase.py`: reglas de seguridad de la base de datos (RLS).
 - `test_api.py`: la API de punta a punta.
 - `test_reporte_anonimo.py`: el reporte rápido sin cuenta y los límites de los invitados.
+- `test_anuncios.py`: lectura de anuncios con Gemini (Gemini se simula: no gasta cuota).
 - `test_frontend_e2e.py`: la página en un navegador real (Edge).
 
 Si el modo invitado está desactivado en Supabase, las pruebas del reporte sin cuenta salen

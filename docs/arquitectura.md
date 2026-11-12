@@ -244,6 +244,7 @@ Se notifica solo si `total ≥ umbral` y la pareja es nueva.
 | GET | `/api/matches/{id}` | detalle; si está confirmada, incluye el contacto de la otra persona — *añadida en etapa 4* |
 | POST | `/api/matches/{id}/confirm` · `/discard` | decidir |
 | GET | `/api/notifications` · POST `/api/notifications/{id}/read` | avisos |
+| POST | `/api/ads/extract` | leer el texto de un anuncio de redes con Gemini (opcional, D6) — *añadida 2026-11-12* |
 
 ## 8. Estructura de carpetas prevista
 
@@ -280,4 +281,10 @@ proyecto_peta-ert_ia/
   - Límites para invitados (migración 4 + backend): solo reportes `found`; no registran mascotas; deben dejar contacto para publicar; **no ven reportes ni fotos ajenos** (D1 se mantiene) y no usan `app.html`.
   - En los reportes `found`, `color` y `size` pasan a ser opcionales (en `lost` siguen obligatorios).
   - El dueño de la mascota perdida confirma (D2) y entonces ve el contacto del invitado.
-  - Riesgos aceptados para el prototipo: los usuarios anónimos se acumulan (limpieza pendiente) y el spam solo lo frena el límite de Supabase (~30 invitados/hora por IP). Antes de la nube: añadir CAPTCHA (Turnstile/hCaptcha).
+  - Riesgos aceptados para el prototipo (D5): los usuarios anónimos se acumulan (limpieza pendiente) y el spam solo lo frena el límite de Supabase (~30 invitados/hora por IP). Antes de la nube: añadir CAPTCHA (Turnstile/hCaptcha).
+- **D6 — Leer anuncios de redes con Gemini (aprobada por Daniela, 2026-11-12):** en el formulario rápido, la persona puede pegar el **texto** de un anuncio que vio en redes. Gemini extrae especie, color, tamaño, raza, señas, lugar y fecha para llenar el reporte.
+  - Es un extra **opcional**: solo aparece si `GEMINI_API_KEY` está en `backend/.env`. El requisito general ("no se necesita LLM generativo") se mantiene: el núcleo (coincidencias) no depende de Gemini.
+  - **Plan gratuito** de la API de Gemini: Google puede usar y leer lo que se envía. Por eso solo se envía texto (nunca fotos ni capturas) y el backend **borra teléfonos, correos, enlaces y @usuarios antes de enviarlo** (`backend/app/anuncios.py`).
+  - Llamada desde el backend (`POST /api/ads/extract`, requiere sesión, máximo 10 por persona por hora). La clave nunca llega al navegador.
+  - La respuesta tiene un formato fijo (JSON con valores permitidos) y se valida. El texto del anuncio se trata como datos, no como instrucciones. Nada se publica sin que la persona lo revise.
+  - No se pueden leer automáticamente las redes: Facebook cerró el acceso a grupos (2024), y el scraping viola sus condiciones y la Ley 1581 de 2012.
