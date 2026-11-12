@@ -1,7 +1,7 @@
 """Leer anuncios de redes con Gemini (D6). Gemini se SIMULA: no se llama a Google ni se gasta cuota.
 
 Lo que se comprueba es nuestra parte: qué se borra antes de enviar, qué se envía y cómo se
-valida la respuesta. La conexión real se prueba a mano cuando haya GEMINI_API_KEY.
+valida la respuesta. La conexión real se probó a mano con GEMINI_API_KEY el 2026-11-12.
 """
 import asyncio
 from dataclasses import replace
@@ -94,6 +94,38 @@ def test_extract_limite_gratuito(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         run_extract(monkeypatch, {}, status=429)
     assert exc.value.status_code == 429
+
+
+def run_sequence(monkeypatch, statuses):
+    """Gemini responde con estos códigos, uno por intento. Devuelve (resultado o excepción, nº de llamadas)."""
+    calls = []
+    ok = json.dumps({"type": "found", "species": "cat"})
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(statuses[len(calls) - 1], json={"candidates": [{"content": {"parts": [{"text": ok}]}}]})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(anuncios, "get_settings", lambda: replace(get_settings(), gemini_api_key="clave-de-prueba"))
+    monkeypatch.setattr(supabase, "client", lambda: client)
+    monkeypatch.setattr(anuncios, "RETRY_DELAYS", (0, 0))  # sin pausas en la prueba
+    try:
+        return asyncio.run(anuncios.extract("Se encontró un gato gris en Suba")), len(calls)
+    except HTTPException as exc:
+        return exc, len(calls)
+
+
+def test_extract_reintenta_si_google_esta_ocupado(monkeypatch):
+    # El 503 "high demand" real de Google (visto el 2026-11-12): al tercer intento responde.
+    (data, _), calls = run_sequence(monkeypatch, [503, 500, 200])
+    assert data.species == "cat" and calls == 3
+
+
+def test_extract_se_rinde_con_mensaje_claro(monkeypatch):
+    exc, calls = run_sequence(monkeypatch, [503, 503, 503])
+    assert exc.status_code == 503 and "ocupada" in exc.detail and calls == 3
+    exc, calls = run_sequence(monkeypatch, [429])  # la cuota agotada no se reintenta
+    assert exc.status_code == 429 and calls == 1
 
 
 # ---------------------------------------------------------------------------

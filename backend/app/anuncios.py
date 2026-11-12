@@ -12,8 +12,10 @@ Privacidad (plan GRATUITO de Gemini: Google puede usar y leer lo que se envía):
 """
 from __future__ import annotations
 
+import asyncio
 from datetime import date, timedelta
 import json
+import logging
 import re
 from typing import Literal
 
@@ -26,6 +28,9 @@ from .config import get_settings
 
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+RETRYABLE = {500, 503}  # errores pasajeros de Google ("high demand"); el 429 (cuota) no se reintenta
+RETRY_DELAYS = (1.0, 2.0)  # segundos de pausa antes del 2.º y 3.er intento
+log = logging.getLogger(__name__)
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
 _URL = re.compile(r"(https?://|www\.)\S+", re.IGNORECASE)
@@ -112,16 +117,31 @@ async def extract(text: str) -> tuple[AdData, int]:
         "generationConfig": {"temperature": 0, "maxOutputTokens": 600,
                              "responseMimeType": "application/json", "responseJsonSchema": SCHEMA},
     }
-    try:
-        response = await supabase.client().post(
-            GEMINI_URL.format(model=s.gemini_model), json=body, timeout=30,
-            headers={"x-goog-api-key": s.gemini_api_key})
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=503, detail="No se pudo conectar con el servicio de IA") from exc
+    # El plan gratuito a veces responde 503 "high demand" (comprobado 2026-11-12): es pasajero,
+    # así que se reintenta un par de veces con una pausa corta antes de rendirse.
+    for attempt in range(len(RETRY_DELAYS) + 1):
+        if attempt:
+            await asyncio.sleep(RETRY_DELAYS[attempt - 1])
+        try:
+            response = await supabase.client().post(
+                GEMINI_URL.format(model=s.gemini_model), json=body, timeout=30,
+                headers={"x-goog-api-key": s.gemini_api_key})
+        except httpx.HTTPError as exc:
+            log.warning("Gemini: sin conexión (%s), intento %d", type(exc).__name__, attempt + 1)
+            if attempt == len(RETRY_DELAYS):
+                raise HTTPException(status_code=503, detail="No se pudo conectar con el servicio de IA") from exc
+            continue
+        if response.status_code not in RETRYABLE:
+            break
+        log.warning("Gemini respondió %d, intento %d", response.status_code, attempt + 1)
     if response.status_code == 429:
         raise HTTPException(status_code=429, detail="Se alcanzó el límite gratuito de la IA. Intenta más tarde.")
+    if response.status_code in RETRYABLE:
+        raise HTTPException(status_code=503, detail="La IA está ocupada en este momento. "
+                                                    "Intenta en un minuto o llena los datos a mano.")
     if response.status_code != 200:
-        # No se reenvía el detalle de Google (podría incluir datos de la cuenta).
+        # Al usuario no se le reenvía el detalle de Google; en el registro del servidor solo el código.
+        log.warning("Gemini respondió %d", response.status_code)
         raise HTTPException(status_code=502, detail="El servicio de IA no respondió correctamente")
     try:
         raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
