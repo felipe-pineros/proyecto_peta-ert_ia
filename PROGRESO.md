@@ -50,14 +50,15 @@
   - Sin `innerHTML` con datos de usuarios (evita XSS).
   - 5 pruebas en navegador real (`backend/tests/test_frontend_e2e.py`, Playwright + Edge de Windows). **28/28 pruebas pasan** (2026-11-10). Capturas revisadas en escritorio y celular.
 
-- **Ajuste de la etapa 5: reporte rápido sin cuenta (decisión D5, 2026-11-12). EN VERIFICACIÓN.**
+- **Ajuste de la etapa 5: reporte rápido sin cuenta (decisión D5, 2026-11-12). ✅ Verificado.**
   - Pedido por Daniela: quien encuentra una mascota la reporta desde la página principal sin registrarse.
   - `index.html`: nueva sección "Encontré una mascota" (foto, Perro/Gato, mapa con "Usar mi ubicación", teléfono o correo). La tarjeta del inicio baja a esa sección. Archivos: `css/reporte-rapido.css` y `js/reporte-rapido.js`.
   - Usa un usuario **anónimo** de Supabase. Migración 4 (`20261112000004_reporte_rapido_anonimo.sql`):
     - color y tamaño pasan a ser opcionales en reportes encontrados;
     - los invitados solo crean reportes encontrados, deben dejar contacto y no ven reportes ajenos.
   - Backend: `User.is_anonymous`; la API responde 403/422 con mensajes claros a los invitados.
-  - Pruebas: 29 pasan. **6 nuevas salen omitidas** hasta aplicar la migración 4 y activar el modo invitado (2026-11-12).
+  - Daniela aplicó la migración 4 y activó "Allow anonymous sign-ins" (2026-11-12).
+  - **35/35 pruebas pasan, sin omitidas** (2026-11-12). Al terminar, Supabase quedó limpio: 0 usuarios de prueba, 0 invitados y 0 fotos.
 
 ## Pendiente
 - **Etapa 6 (siguiente):** evaluación del modelo de IA (necesita las fotos de evaluación).
@@ -72,10 +73,6 @@
   - falta la opción "convertir mi reporte de invitado en cuenta".
 
 ## Bloqueado / depende de ti
-- **Reporte sin cuenta (D5):**
-  1. Ejecutar `supabase/migrations/20261112000004_reporte_rapido_anonimo.sql` en el SQL Editor.
-  2. Activar **Authentication → Sign In / Providers → Allow anonymous sign-ins**.
-  3. Después: correr las pruebas (deben pasar 35, sin omitidas).
 - **Docker Desktop no está instalado** (necesario en la etapa 9). Instalar con los datos en `D:`, porque `C:` tiene ~8,6 GB libres.
 - **Fotos de evaluación** (etapa 6): varias fotos de los mismos animales, con permiso de sus dueños.
 - ~~`git push` bloqueado (403)~~ → **resuelto el 2026-11-12**: todo está subido a `origin/master`.
