@@ -269,7 +269,13 @@
         ready.length ? main : el('div', { class: 'notice', text: 'Este reporte aún no tiene fotos.' }),
         ready.length > 1 || open ? el('div', { style: 'margin-top:14px;' }, grid) : null,
         addPhotos ? el('div', { style: 'margin-top:16px;' }, addPhotos) : null),
-      el('div', { class: 'panel' }, el('h3', { text: 'Datos' }), facts));
+      el('div', { class: 'panel' }, el('h3', { text: 'Datos' }), facts),
+      // Difundir en redes: solo reportes publicados (cualquiera con sesión puede ayudar).
+      r.status === 'active' && window.PetShare ? el('div', { class: 'panel', id: 'share-panel' },
+        el('h3', { text: 'Ayuda a difundir' }),
+        window.PetShare.panel({ report: r, photoUrl: ready[0] ? () => photoUrl(ready[0].id) : null,
+          onCopied: () => toast('Texto copiado') }),
+        el('p', { class: 'share-note', text: 'El texto no incluye teléfonos, correos ni el punto exacto del mapa.' })) : null);
 
     const right = el('div', null,
       el('div', { class: 'panel' },

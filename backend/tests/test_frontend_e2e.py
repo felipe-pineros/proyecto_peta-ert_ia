@@ -16,6 +16,7 @@ import re
 import subprocess
 import sys
 import time
+from urllib.parse import unquote
 import uuid
 
 from dotenv import load_dotenv
@@ -221,10 +222,14 @@ def test_reporte_rapido_sin_cuenta(server, browser, photo_file):
         page.click("#qr-map", position={"x": 260, "y": 120})
         page.wait_for_selector("#qr-map .leaflet-marker-icon")
         page.click("label:has(input[value='cat'])")
-        page.fill("#qr-phone", "300 765 4321")
+        page.fill("#qr-phone", "300 246 1357")
         page.click("#quick-form .form-submit")
         page.wait_for_selector("#qr-msg >> text=Gracias por ayudar", timeout=60_000)
         assert guest.get("id"), "no se creó la sesión de invitado"
+        # Botones para difundir: el texto NO lleva el teléfono de quien reportó.
+        page.wait_for_selector("#qr-share:not([hidden]) .share-whatsapp")
+        wa = unquote(page.get_attribute("#qr-share .share-whatsapp", "href"))
+        assert "Se encontró un gato" in wa and "246" not in wa and "1357" not in wa
 
         rows = httpx.get(f"{URL}/rest/v1/reports", headers=admin_headers(), timeout=30, params={
             "select": "type,status,species,color", "user_id": f"eq.{guest['id']}"}).json()
@@ -291,6 +296,10 @@ def test_otro_usuario_ve_el_reporte_sin_datos_privados(server, browser, users, s
     page.wait_for_selector("#detail-map path.leaflet-interactive")  # círculo aproximado, no el punto
     assert page.query_selector("#detail-map .leaflet-marker-icon") is None
     assert "Tu contacto (privado)" not in page.content()
+    # Beto puede ayudar a difundir; el texto no lleva el contacto de Ana ni el punto exacto.
+    wa = unquote(page.get_attribute("#share-panel .share-whatsapp", "href"))
+    assert wa.startswith("https://wa.me/?text=Se busca un perro (café con blanco, mediano)")
+    assert "Parque de prueba" in wa and "300 000" not in wa and "4.6" not in wa
     assert errors == []
 
 

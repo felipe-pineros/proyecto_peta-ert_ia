@@ -149,6 +149,18 @@
     againBtn.hidden = Boolean(isError);
   }
 
+  // Botones para difundir el hallazgo (js/compartir.js), con la foto que la persona eligió.
+  const shareBox = $('qr-share');
+  function showShare(report, file) {
+    shareBox.querySelectorAll('.share-row, .share-note').forEach((n) => n.remove());
+    if (!window.PetShare) return;
+    const note = document.createElement('p');
+    note.className = 'share-note';
+    note.textContent = 'El texto no incluye tu teléfono ni tu correo.';
+    shareBox.append(window.PetShare.panel({ report, photoFile: file }), note);
+    shareBox.hidden = false;
+  }
+
   async function ensureSession() {
     if (await getSession()) return;  // ya tiene sesión (cuenta normal o invitado anterior)
     const client = await getClient();
@@ -183,7 +195,8 @@
       await api('/api/reports/' + reportId + '/photos', { method: 'POST', form: fd });
 
       setLoading(true, 'Publicando…');
-      await api('/api/reports/' + reportId + '/publish', { method: 'POST' });
+      const published = await api('/api/reports/' + reportId + '/publish', { method: 'POST' });
+      showShare(published, photoInput.files[0]);
 
       form.querySelectorAll('input, button.qr-locate').forEach((f) => { f.disabled = true; });
       setLoading(true, 'Reporte publicado');
@@ -204,6 +217,7 @@
     form.querySelectorAll('input, button.qr-locate').forEach((f) => { f.disabled = false; });
     clearPreview();
     msg.style.display = 'none';
+    shareBox.hidden = true;
     setLoading(false, 'Publicar reporte');
     // Se conserva el punto del mapa: lo normal es reportar otra mascota en el mismo lugar.
     photoInput.focus({ preventScroll: true });

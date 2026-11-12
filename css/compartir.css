@@ -1,0 +1,14 @@
+/* PET Alert · Botones para difundir un reporte (los usan index.html y app.html). */
+.share-row{display:flex; flex-wrap:wrap; gap:8px;}
+.share-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:9px 16px; border-radius:999px; font-family:inherit; font-size:0.86rem; font-weight:600;
+  border:1.5px solid transparent; cursor:pointer; text-decoration:none; line-height:1.2;
+  transition:transform .15s ease, filter .15s ease;
+}
+.share-btn:hover{transform:translateY(-1px); filter:brightness(0.96);}
+.share-native{background:var(--teal-dark); color:var(--white);}
+.share-whatsapp{background:#1F8F4E; color:var(--white);}   /* verde oscuro: contraste AA con texto blanco */
+.share-facebook{background:#1A5DC9; color:var(--white);}
+.share-copy{background:var(--white); color:var(--teal-dark); border-color:var(--teal-dark);}
+.share-note{font-size:0.8rem; color:var(--ink-soft); margin-top:8px;}
