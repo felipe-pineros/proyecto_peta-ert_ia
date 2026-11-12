@@ -5,9 +5,11 @@ Ejecutar (desde la raíz del proyecto, en PowerShell):
 Luego abrir http://localhost:8000 (frontend) o http://localhost:8000/docs (API).
 """
 from contextlib import asynccontextmanager
+from html import escape as html_escape
+from xml.sax.saxutils import escape as xml_escape
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import supabase
@@ -51,11 +53,38 @@ for module in (perfil, mascotas, reportes, fotos, coincidencias, notificaciones)
     app.include_router(module.router)
 
 
+# ---------------------------------------------------------------------------
+# Buscadores (SEO) y vistas previas al compartir el enlace.
+# Google, WhatsApp y Facebook exigen direcciones COMPLETAS (https://...), así que
+# index.html lleva el marcador __SITE_URL__ y aquí se reemplaza por la dirección real.
+# ---------------------------------------------------------------------------
+def site_url(request: Request) -> str:
+    return get_settings().public_site_url or str(request.base_url).rstrip("/")
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots(request: Request):
+    # Solo la página principal es pública; la app y la API requieren sesión (D1).
+    return PlainTextResponse(
+        "User-agent: *\nAllow: /\nDisallow: /app.html\nDisallow: /api/\n"
+        f"\nSitemap: {site_url(request)}/sitemap.xml\n")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap(request: Request):
+    return Response(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"  <url><loc>{xml_escape(site_url(request))}/</loc></url>\n"
+        "</urlset>\n", media_type="application/xml")
+
+
 # Frontend: SOLO las dos páginas y las carpetas img/, css/ y js/.
 # Nunca se monta la raíz del proyecto (expondría backend/.env y el código).
 @app.get("/", include_in_schema=False)
-async def index():
-    return FileResponse(ROOT_DIR / "index.html")
+async def index(request: Request):
+    html = (ROOT_DIR / "index.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("__SITE_URL__", html_escape(site_url(request))))
 
 
 @app.get("/app.html", include_in_schema=False)

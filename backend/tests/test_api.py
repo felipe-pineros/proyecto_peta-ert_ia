@@ -155,6 +155,22 @@ def test_salud_y_frontend_sin_exponer_archivos(api):
     assert SECRET not in json.dumps(config)
 
 
+def test_buscadores_y_vista_previa(api):
+    # Sin PUBLIC_SITE_URL se usa la dirección de la petición (en las pruebas: http://testserver).
+    home = api.get("/").text
+    assert "__SITE_URL__" not in home
+    assert '<meta property="og:image" content="http://testserver/img/compartir.jpg">' in home
+    assert '<link rel="canonical" href="http://testserver/">' in home
+    assert api.get("/img/compartir.jpg").status_code == 200
+    robots = api.get("/robots.txt")
+    assert robots.status_code == 200 and "Disallow: /app.html" in robots.text and "Disallow: /api/" in robots.text
+    assert "Sitemap: http://testserver/sitemap.xml" in robots.text
+    sitemap = api.get("/sitemap.xml")
+    assert sitemap.headers["content-type"].startswith("application/xml")
+    assert "<loc>http://testserver/</loc>" in sitemap.text
+    assert '<meta name="robots" content="noindex">' in api.get("/app.html").text
+
+
 def test_sin_sesion_o_token_falso_da_401(api):
     assert api.get("/api/reports").status_code == 401
     assert api.get("/api/me", headers={"Authorization": "Bearer token-falso"}).status_code == 401

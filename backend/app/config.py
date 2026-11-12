@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 import os
 from pathlib import Path
+import re
 
 from dotenv import load_dotenv
 
@@ -24,6 +25,9 @@ class Settings:
     publishable_key: str
     secret_key: str
     signed_url_ttl_seconds: int
+    # Dirección pública del sitio (p. ej. https://petalert.co) para buscadores y vistas previas.
+    # Vacía = se usa la dirección desde la que se abrió la página (útil en localhost).
+    public_site_url: str = ""
 
 
 @lru_cache
@@ -41,4 +45,7 @@ def get_settings() -> Settings:
         raise RuntimeError("PHOTO_SIGNED_URL_TTL_SECONDS debe ser un número entero") from exc
     if not 30 <= ttl <= 900:
         raise RuntimeError("PHOTO_SIGNED_URL_TTL_SECONDS debe estar entre 30 y 900 segundos")
-    return Settings(url, publishable, secret, ttl)
+    site = os.getenv("PUBLIC_SITE_URL", "").strip().rstrip("/")
+    if site and not re.fullmatch(r"https?://[A-Za-z0-9.-]+(:\d+)?", site):
+        raise RuntimeError("PUBLIC_SITE_URL debe ser solo la dirección, p. ej. https://petalert.co")
+    return Settings(url, publishable, secret, ttl, site)
