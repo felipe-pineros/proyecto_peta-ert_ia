@@ -78,7 +78,7 @@
   3. Después: correr las pruebas (deben pasar 35, sin omitidas).
 - **Docker Desktop no está instalado** (necesario en la etapa 9). Instalar con los datos en `D:`, porque `C:` tiene ~8,6 GB libres.
 - **Fotos de evaluación** (etapa 6): varias fotos de los mismos animales, con permiso de sus dueños.
-- **`git push`:** Felipe ya aprobó subir a `master`, pero GitHub responde 403: la cuenta `dakina20` no tiene permiso de escritura en `felipe-pineros/proyecto_peta-ert_ia`. Felipe debe agregarla como colaboradora (Settings → Collaborators) y Daniela aceptar la invitación. Luego: `git push origin master`.
+- ~~`git push` bloqueado (403)~~ → **resuelto el 2026-11-12**: todo está subido a `origin/master`.
 
 ## Decisiones tomadas
 - El modelo de IA **no se entrena**: se usa uno preentrenado y solo se calibran los umbrales.
