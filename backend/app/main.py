@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import supabase
 from .config import ROOT_DIR, get_settings
-from .routers import coincidencias, fotos, mascotas, notificaciones, perfil, reportes
+from .routers import anuncios, coincidencias, fotos, mascotas, notificaciones, perfil, reportes
 
 
 @asynccontextmanager
@@ -46,10 +46,11 @@ async def health():
 async def public_config():
     """Datos PÚBLICOS que necesita supabase-js en el navegador (nunca la secret key)."""
     s = get_settings()
-    return {"supabase_url": s.supabase_url, "supabase_publishable_key": s.publishable_key}
+    return {"supabase_url": s.supabase_url, "supabase_publishable_key": s.publishable_key,
+            "features": {"read_ad": bool(s.gemini_api_key)}}
 
 
-for module in (perfil, mascotas, reportes, fotos, coincidencias, notificaciones):
+for module in (perfil, mascotas, reportes, fotos, coincidencias, notificaciones, anuncios):
     app.include_router(module.router)
 
 

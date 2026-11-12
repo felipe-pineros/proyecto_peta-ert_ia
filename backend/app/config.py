@@ -28,6 +28,10 @@ class Settings:
     # Dirección pública del sitio (p. ej. https://petalert.co) para buscadores y vistas previas.
     # Vacía = se usa la dirección desde la que se abrió la página (útil en localhost).
     public_site_url: str = ""
+    # Opcional: Gemini para "leer un anuncio de redes" (plan gratuito, solo texto, sin datos personales).
+    # Vacía = la función no aparece.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.5-flash-lite"
 
 
 @lru_cache
@@ -48,4 +52,8 @@ def get_settings() -> Settings:
     site = os.getenv("PUBLIC_SITE_URL", "").strip().rstrip("/")
     if site and not re.fullmatch(r"https?://[A-Za-z0-9.-]+(:\d+)?", site):
         raise RuntimeError("PUBLIC_SITE_URL debe ser solo la dirección, p. ej. https://petalert.co")
-    return Settings(url, publishable, secret, ttl, site)
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+    gemini_model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash-lite"
+    if not re.fullmatch(r"[a-z0-9.\-]{3,60}", gemini_model):
+        raise RuntimeError("GEMINI_MODEL no es un nombre de modelo válido")
+    return Settings(url, publishable, secret, ttl, site, gemini_key, gemini_model)
