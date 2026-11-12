@@ -60,6 +60,13 @@
   - Daniela aplicó la migración 4 y activó "Allow anonymous sign-ins" (2026-11-12).
   - **35/35 pruebas pasan, sin omitidas** (2026-11-12). Al terminar, Supabase quedó limpio: 0 usuarios de prueba, 0 invitados y 0 fotos.
 
+- **Buscadores y vista previa al compartir (2026-11-12):**
+  - `index.html`: título y descripción para Google, `canonical`, Open Graph (imagen `img/compartir.jpg` de 1200×630, 117 KB, recortada del banner) y datos estructurados `WebSite`.
+  - `app.html` lleva `noindex`: la app requiere sesión.
+  - El backend entrega `/robots.txt` (permite la portada; bloquea `/app.html` y `/api/`) y `/sitemap.xml`. Ambos usan `PUBLIC_SITE_URL` (opcional) o, si no está, la dirección de la petición.
+  - **36/36 pruebas pasan** (2026-11-12).
+  - Falta (al publicar en la nube, etapa 10): dominio, `PUBLIC_SITE_URL` y registrar el sitio en Google Search Console.
+
 ## Pendiente
 - **Etapa 6 (siguiente):** evaluación del modelo de IA (necesita las fotos de evaluación).
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
@@ -88,7 +95,7 @@
 - D5: reporte rápido de mascota encontrada sin cuenta (usuario anónimo de Supabase). Los invitados no ven reportes ajenos.
 
 ## Cómo verificar
-- Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 35 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
+- Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 36 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
 - Arrancar el servidor: `.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload` y abrir http://localhost:8000/docs (lista de rutas de la API) o http://localhost:8000 (frontend).
 - Etapa 2:
   - `git status` muestra `node_modules` como eliminado del índice y `ls node_modules` sigue funcionando.

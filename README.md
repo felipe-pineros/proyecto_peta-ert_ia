@@ -52,6 +52,9 @@ python -m venv backend\.venv
    - `SUPABASE_PUBLISHABLE_KEY`: la clave pública (`sb_publishable_...`).
    - `SUPABASE_SECRET_KEY`: la clave secreta (`sb_secret_...`).
 
+Opcional: `PUBLIC_SITE_URL` (la dirección pública, p. ej. `https://tu-dominio.com`). En tu computador
+déjala vacía; en la nube es la que aparece en Google y en la vista previa al compartir el enlace.
+
 > ⚠️ `backend\.env` **nunca** se sube a git (está en `.gitignore`). La clave secreta no se comparte
 > con nadie ni se pega en el frontend.
 
@@ -118,7 +121,7 @@ Cuando veas `Application startup complete.`, abre en el navegador:
 ```
 
 Necesitan internet y `backend\.env`. Crean usuarios temporales en Supabase y **los borran al terminar**
-(con sus fotos). Hay 35 pruebas:
+(con sus fotos). Hay 36 pruebas:
 
 - `test_seguridad_supabase.py`: reglas de seguridad de la base de datos (RLS).
 - `test_api.py`: la API de punta a punta.
