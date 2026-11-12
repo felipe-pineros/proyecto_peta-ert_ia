@@ -10,7 +10,7 @@
 | 3 | Supabase y seguridad | ✅ Completada (2026-11-10) |
 | 4 | Backend CRUD | ✅ Completada (2026-11-10) |
 | 5 | Integración frontend | ✅ Completada (2026-11-10) |
-| 6 | Evaluación del modelo IA | ⏳ Pendiente |
+| 6 | Evaluación del modelo IA | 🔄 En curso: herramientas listas, faltan las fotos |
 | 7 | Motor de coincidencias | ⏳ Pendiente |
 | 8 | Notificaciones | ⏳ Pendiente |
 | 9 | Docker y documentación | ⏳ Pendiente |
@@ -67,8 +67,22 @@
   - **36/36 pruebas pasan** (2026-11-12).
   - Falta (al publicar en la nube, etapa 10): dominio, `PUBLIC_SITE_URL` y registrar el sitio en Google Search Console.
 
+- **Etapa 6 (en curso, 2026-11-12): herramientas de evaluación.**
+  - `evaluacion/evaluar.py` tiene tres comandos:
+    - `verificar`: revisa las fotos;
+    - `modelos`: lista los candidatos;
+    - `evaluar --modelo X [--recorte]`: mide Recall@1/5/10, mAP, AUC, detección con 1 % y 5 % de falsos positivos, ms/foto y memoria.
+  - Modelos verificados (tamaño y licencia en Hugging Face): DINOv2 S/B (Apache-2.0, 88 y 346 MB) y MegaDescriptor T/B (CC-BY-NC-4.0, 204 y 473 MB). Recorte con el detector Faster R-CNN MobileNetV3 de torchvision (BSD, 74 MB).
+  - `evaluacion/requirements-ia.txt`: torch 2.15 CPU, torchvision 0.29.2, timm 1.0.31 y psutil. Instalados en `backend/.venv` (~1 GB). No van en `backend/requirements.txt`, para que el servidor siga siendo liviano.
+  - Comprobado:
+    - 4 pruebas de las métricas pasan;
+    - la evaluación completa corre con imágenes **sintéticas** (solo prueba que el programa funciona, no la calidad);
+    - el detector recorta al perro y al gato del banner;
+    - MegaDescriptor-T carga bien.
+  - Carpeta `datos_evaluacion/perros` y `/gatos` creada (ignorada por git).
+
 ## Pendiente
-- **Etapa 6 (siguiente):** evaluación del modelo de IA (necesita las fotos de evaluación).
+- **Etapa 6:** faltan las fotos reales en `datos_evaluacion/` para medir los modelos y elegir uno (ver `evaluacion/README.md`).
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
 - El registro real envía un correo de confirmación; el correo gratuito de Supabase permite muy pocos por hora (para la demo puede convenir configurar SMTP propio o desactivar la confirmación en Auth).
 - Las coincidencias aún no se crean solas: el motor es de la etapa 7. Hoy solo existen si se insertan a mano (así lo hacen las pruebas).
@@ -96,6 +110,7 @@
 
 ## Cómo verificar
 - Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 36 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
+- Etapa 6: `.\backend\.venv\Scripts\python.exe -m pytest evaluacion -q` (4 pruebas) y `.\backend\.venv\Scripts\python.exe evaluacion\evaluar.py verificar`.
 - Arrancar el servidor: `.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload` y abrir http://localhost:8000/docs (lista de rutas de la API) o http://localhost:8000 (frontend).
 - Etapa 2:
   - `git status` muestra `node_modules` como eliminado del índice y `ls node_modules` sigue funcionando.
