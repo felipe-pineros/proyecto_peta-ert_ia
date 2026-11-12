@@ -1,0 +1,9 @@
+# Dependencias SOLO para la evaluación de IA (etapa 6). El servidor web no las necesita.
+# Verificado el 2026-11-12: versiones para CPU (sin NVIDIA/CUDA), compatibles con Windows,
+# Linux/Docker y Python 3.14. Instalado ocupa ~1 GB.
+#   .\backend\.venv\Scripts\python.exe -m pip install -r evaluacion\requirements-ia.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu          # BSD-3
+torchvision==0.29.2+cpu    # BSD-3 (detector para recortar al animal)
+timm==1.0.31               # Apache-2.0 (carga DINOv2 y MegaDescriptor)
+psutil==7.2.2              # BSD-3 (mide la memoria)
