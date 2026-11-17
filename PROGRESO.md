@@ -114,6 +114,10 @@
   - Las **7 pruebas del navegador pasan contra el contenedor** (opción nueva `PETALERT_BASE_URL` en `test_frontend_e2e.py`). El contenedor atendió 201 peticiones sin errores. En modo normal, sin Docker, también pasan las 7.
   - README: nueva sección 3.1, "Encender con Docker".
   - Docker Desktop está instalado en `AppData\Local\Programs\DockerDesktop` y hay que encenderlo antes de usar `docker compose`.
+- **Error corregido (2026-11-17):**
+  - Problema: el enlace "Regístrate aquí" de la pantalla de inicio de sesión, el logo de la app y "Cerrar sesión" llevaban a `/index.html`, y esa dirección daba 404. Por eso no se podía llegar al registro desde la app.
+  - Solución: el servidor ahora también entrega `/index.html`.
+  - Hay una prueba nueva en `test_api.py`. Las 12 pruebas de la API pasan, y el contenedor responde 200 en esa dirección.
 
 ## Pendiente
 - **Etapa 6:** faltan las fotos reales en `datos_evaluacion/` para medir los modelos y elegir uno (ver `evaluacion/README.md`).
