@@ -1,0 +1,15 @@
+# PET Alert en tu computador con Docker.
+#   docker compose up --build      → abrir http://localhost:8000
+#   docker compose down            → apagar
+#
+# Compose NO instala Supabase: la app se conecta al proyecto de Supabase remoto
+# cuyas claves están en backend/.env (ese archivo no entra a la imagen).
+services:
+  web:
+    build: .
+    image: petalert:local
+    env_file:
+      - backend/.env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

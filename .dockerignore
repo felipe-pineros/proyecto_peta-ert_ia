@@ -1,0 +1,36 @@
+# Lo que NUNCA entra a la imagen Docker.
+# El Dockerfile copia solo lo necesario; esta lista es una segunda protección
+# para que ni secretos ni archivos pesados lleguen al "contexto" de construcción.
+
+# Secretos (las claves llegan como variables de entorno al ejecutar, no dentro de la imagen)
+.env
+*.env
+**/.env
+!**/.env.example
+
+# Entornos, cachés y dependencias locales
+.venv/
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+**/.pytest_cache/
+node_modules/
+
+# Fotos personales y modelos de IA
+datos_evaluacion/
+evaluacion/
+backend/modelos/
+*.onnx
+*.pt
+*.safetensors
+
+# Herramientas y archivos que no usa el servidor
+.git/
+.agents/
+.claude/
+.scripts/
+backend/tests/
+docs/
+supabase/
+*.md
