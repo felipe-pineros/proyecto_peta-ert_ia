@@ -22,6 +22,7 @@ mascotas **perdidas** o **encontradas** con fotos y ubicación, y el sistema sug
 | Git | descargar y guardar cambios | `git --version` |
 | Un proyecto de Supabase | base de datos, cuentas y fotos | [supabase.com](https://supabase.com) |
 | Microsoft Edge | solo para las pruebas del navegador | viene con Windows |
+| Docker Desktop (opcional) | encender todo en un contenedor (paso 3.1) | `docker --version` |
 
 No se necesita GPU ni Node.js.
 
@@ -102,6 +103,37 @@ Cuando veas `Application startup complete.`, abre en el navegador:
   Los cambios en HTML, CSS o JS se ven con solo recargar la página (F5).
 - **Para apagarlo:** en la ventana de PowerShell presiona `Ctrl + C`.
 
+### 3.1 Otra forma: encender con Docker 🐳
+
+Docker empaqueta el backend y el frontend en un "contenedor", igual al que se usaría en la nube.
+No necesita el entorno `.venv`, solo **Docker Desktop** encendido y el archivo `backend\.env` (paso 2.2).
+
+```powershell
+docker compose up --build -d     # construye la imagen y la enciende en segundo plano
+docker compose ps                # debe decir "healthy" (sano) tras unos segundos
+docker compose logs -f web       # ver los registros (Ctrl + C para dejar de verlos)
+docker compose down              # apagar
+```
+
+Luego abre http://localhost:8000, igual que en el paso 3. No enciendas ambos a la vez, porque los dos usan el puerto 8000.
+
+Qué debes saber:
+- **Supabase no corre en Docker.** El contenedor se conecta al proyecto de Supabase remoto
+  con las claves de `backend\.env`.
+- **Las claves no van dentro de la imagen.** Compose las entrega al encender (`env_file`), y
+  `.dockerignore` impide que cualquier `.env` entre a la imagen.
+- La imagen pesa ~250 MB (Python 3.14 slim). Corre sin permisos de administrador y no lleva pruebas, fotos ni modelos de IA.
+- El contenedor escucha en el puerto que indique la variable `PORT` (8000 por defecto; Cloud Run usa la suya).
+- Si cambias código, vuelve a ejecutar `docker compose up --build -d`.
+
+Para correr las pruebas del navegador **contra el contenedor**:
+
+```powershell
+$env:PETALERT_BASE_URL = "http://localhost:8000"
+.\backend\.venv\Scripts\python.exe -m pytest backend\tests\test_frontend_e2e.py -v
+Remove-Item Env:PETALERT_BASE_URL
+```
+
 ---
 
 ## 4. Probar la aplicación paso a paso
@@ -126,7 +158,7 @@ Cuando veas `Application startup complete.`, abre en el navegador:
 ```
 
 Necesitan internet y `backend\.env`. Crean usuarios temporales en Supabase y **los borran al terminar**
-(con sus fotos). Hay 46 pruebas:
+(con sus fotos). Hay 46 pruebas, más 4 de las métricas de IA en `evaluacion/`:
 
 - `test_seguridad_supabase.py`: reglas de seguridad de la base de datos (RLS).
 - `test_api.py`: la API de punta a punta.
@@ -171,6 +203,7 @@ proyecto_peta-ert_ia/
 │  ├─ requirements.txt · requirements-dev.txt
 │  └─ .env.example     plantilla de configuración (el .env real no se sube)
 ├─ supabase/migrations/ SQL de la base de datos
+├─ Dockerfile · docker-compose.yml · .dockerignore   contenedor (paso 3.1)
 ├─ docs/arquitectura.md diseño del sistema
 └─ PROGRESO.md         qué está hecho, qué falta y cómo verificarlo
 ```

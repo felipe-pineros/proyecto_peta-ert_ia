@@ -1,6 +1,6 @@
 # Progreso — PET Alert
 
-Última actualización: 2026-11-12
+Última actualización: 2026-11-17
 
 ## Etapas
 | # | Etapa | Estado |
@@ -13,7 +13,7 @@
 | 6 | Evaluación del modelo IA | 🔄 En curso: herramientas listas, faltan las fotos |
 | 7 | Motor de coincidencias | ⏳ Pendiente |
 | 8 | Notificaciones | ⏳ Pendiente |
-| 9 | Docker y documentación | ⏳ Pendiente |
+| 9 | Docker y documentación | 🔄 Docker listo y probado (2026-11-17), falta tu confirmación |
 | 10 | Preparación para la nube | ⏳ Pendiente |
 
 ## Completado
@@ -100,6 +100,21 @@
     - MegaDescriptor-T carga bien.
   - Carpeta `datos_evaluacion/perros` y `/gatos` creada (ignorada por git).
 
+- **Etapa 9: Docker (2026-11-17). Probado ✅, falta la confirmación de Daniela.**
+  - Archivos nuevos: `Dockerfile`, `docker-compose.yml` y `.dockerignore`.
+  - La imagen `petalert:local` pesa 253 MB y usa Python 3.14 slim, la misma versión del `.venv`.
+  - Lleva solo `backend/app`, las dos páginas, `css/`, `js/` e `img/`.
+  - Corre con el usuario `petalert`, sin permisos de administrador. Tiene revisión de salud (`/api/health`) y usa el puerto de la variable `PORT`, que necesita Cloud Run.
+  - Las claves llegan desde `backend/.env` al encender (`env_file`). **No están dentro de la imagen:** se comprobó que hay 0 archivos `.env` y 0 variables con claves al revisarla por dentro.
+  - Compose no instala Supabase: el contenedor usa el Supabase remoto.
+  - Comprobado con el contenedor encendido:
+    - estado `healthy`;
+    - `/`, `/app.html`, `/css`, `/js`, `/robots.txt`, `/docs` y `/api/config` responden 200;
+    - `/.env`, `/backend/.env` y `/backend/app/config.py` dan 404.
+  - Las **7 pruebas del navegador pasan contra el contenedor** (opción nueva `PETALERT_BASE_URL` en `test_frontend_e2e.py`). El contenedor atendió 201 peticiones sin errores. En modo normal, sin Docker, también pasan las 7.
+  - README: nueva sección 3.1, "Encender con Docker".
+  - Docker Desktop está instalado en `AppData\Local\Programs\DockerDesktop` y hay que encenderlo antes de usar `docker compose`.
+
 ## Pendiente
 - **Etapa 6:** faltan las fotos reales en `datos_evaluacion/` para medir los modelos y elegir uno (ver `evaluacion/README.md`).
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
@@ -114,7 +129,8 @@
 
 ## Bloqueado / depende de ti
 - ~~Clave de Gemini~~ → **resuelto el 2026-11-12**: la clave está en `backend/.env` y la conexión real funciona.
-- **Docker Desktop no está instalado** (necesario en la etapa 9). Instalar con los datos en `D:`, porque `C:` tiene ~8,6 GB libres.
+- ~~Docker Desktop no está instalado~~ → **resuelto**: instalado y funcionando (2026-11-17).
+- **Google Cloud (etapa 10):** falta instalar `gcloud` y crear el proyecto con facturación. No se hace sin tu autorización.
 - **Fotos de evaluación** (etapa 6): varias fotos de los mismos animales, con permiso de sus dueños.
 - ~~`git push` bloqueado (403)~~ → **resuelto el 2026-11-12**: todo está subido a `origin/master`.
 
@@ -131,6 +147,7 @@
 
 ## Cómo verificar
 - Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 46 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
+- Etapa 9 (Docker): con Docker Desktop encendido, ejecutar `docker compose up --build -d`. Luego `docker compose ps` debe mostrar `healthy` y http://localhost:8000 debe abrir. Para probar contra el contenedor: `$env:PETALERT_BASE_URL="http://localhost:8000"` y después `pytest backend\tests\test_frontend_e2e.py` (7 pruebas).
 - Etapa 6: `.\backend\.venv\Scripts\python.exe -m pytest evaluacion -q` (4 pruebas) y `.\backend\.venv\Scripts\python.exe evaluacion\evaluar.py verificar`.
 - Arrancar el servidor: `.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload` y abrir http://localhost:8000/docs (lista de rutas de la API) o http://localhost:8000 (frontend).
 - Etapa 2:
