@@ -142,6 +142,8 @@ def test_salud_y_frontend_sin_exponer_archivos(api):
     assert ok(api.get("/api/health")) == {"status": "ok"}
     home = api.get("/")
     assert home.status_code == 200 and "text/html" in home.headers["content-type"]
+    # app.html enlaza a "index.html" (logo, "Regístrate aquí", cerrar sesión): debe ser la misma página.
+    assert api.get("/index.html").text == home.text
     assert api.get("/img/logo.png").status_code == 200
     for archivo in ("/app.html", "/css/estilos.css", "/css/app.css", "/css/reporte-rapido.css", "/css/compartir.css",
                     "/js/app.js", "/js/sesion.js", "/js/mapa.js", "/js/reporte-rapido.js", "/js/compartir.js"):

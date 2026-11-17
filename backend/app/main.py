@@ -83,6 +83,7 @@ async def sitemap(request: Request):
 # Frontend: SOLO las dos páginas y las carpetas img/, css/ y js/.
 # Nunca se monta la raíz del proyecto (expondría backend/.env y el código).
 @app.get("/", include_in_schema=False)
+@app.get("/index.html", include_in_schema=False)  # app.html enlaza a "index.html" (logo, registro, salir)
 async def index(request: Request):
     html = (ROOT_DIR / "index.html").read_text(encoding="utf-8")
     return HTMLResponse(html.replace("__SITE_URL__", html_escape(site_url(request))))
