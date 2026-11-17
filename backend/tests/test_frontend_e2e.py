@@ -34,7 +34,10 @@ URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
 PUBLISHABLE = os.getenv("SUPABASE_PUBLISHABLE_KEY", "").strip()
 SECRET = os.getenv("SUPABASE_SECRET_KEY", "").strip()
 PORT = 8765
-BASE = f"http://127.0.0.1:{PORT}"
+# Opcional: probar un servidor ya encendido (p. ej. el contenedor Docker) en vez de arrancar uno:
+#   $env:PETALERT_BASE_URL = "http://localhost:8000"
+EXTERNAL_BASE = os.getenv("PETALERT_BASE_URL", "").strip().rstrip("/")
+BASE = EXTERNAL_BASE or f"http://127.0.0.1:{PORT}"
 UUID_RE = r"[0-9a-f-]{36}"
 
 
@@ -50,6 +53,13 @@ def admin_headers() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="module")
 def server():
+    if EXTERNAL_BASE:
+        try:
+            httpx.get(f"{BASE}/api/health", timeout=5).raise_for_status()
+        except httpx.HTTPError:
+            pytest.fail(f"PETALERT_BASE_URL={BASE} no responde en /api/health")
+        yield BASE
+        return
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app", "--app-dir", str(BACKEND_DIR), "--port", str(PORT)],
         cwd=ROOT_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
