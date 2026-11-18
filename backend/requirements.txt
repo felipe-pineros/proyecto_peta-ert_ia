@@ -6,3 +6,6 @@ python-multipart>=0.0.20,<1  # recibir fotos en formularios (Apache-2.0)
 Pillow>=11,<13             # validar y recodificar fotos (MIT-CMU)
 httpx>=0.28,<1             # llamadas a Supabase (BSD-3)
 python-dotenv>=1,<2        # leer backend/.env (BSD-3)
+# IA (etapa 7): DINOv2-S en ONNX, solo CPU. ~16 MB (Windows) / ~27 MB (Linux). Sin PyTorch.
+onnxruntime==1.32.0        # ejecutar el modelo (MIT)
+numpy>=2,<3                # preparar la imagen para el modelo (BSD-3)
