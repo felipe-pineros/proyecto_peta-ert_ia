@@ -10,7 +10,7 @@ from ..auth import User, require_user
 
 router = APIRouter(prefix="/api/notifications", tags=["notificaciones"])
 
-NOTIF_COLS = "id,match_id,kind,read_at,created_at"
+NOTIF_COLS = "id,match_id,report_id,comment_id,kind,read_at,created_at"
 
 
 @router.get("")
@@ -25,7 +25,7 @@ async def list_notifications(
         params["read_at"] = "is.null"
     rows = await supabase.db("GET", "notifications", token=user.token, params=params)
     # Para escribir un aviso claro: ¿soy quien perdió o quien encontró?, y de qué especie es.
-    match_ids = {n["match_id"] for n in rows}
+    match_ids = {n["match_id"] for n in rows if n["match_id"]}
     matches = await supabase.db("GET", "matches", token=user.token, params={
         "select": "id,lost_report_id", "id": f"in.({','.join(match_ids)})"}) if match_ids else []
     lost_ids = {m["lost_report_id"] for m in matches}
@@ -33,7 +33,18 @@ async def list_notifications(
         "select": "id,user_id,species", "id": f"in.({','.join(lost_ids)})"}) if lost_ids else []
     lost_by_id = {r["id"]: r for r in lost}
     info = {m["id"]: lost_by_id.get(m["lost_report_id"]) for m in matches}
+    # Avisos de comentarios: la especie y el tipo del reporte comentado (que es mío).
+    commented_ids = {n["report_id"] for n in rows if n["report_id"]}
+    commented = await supabase.db("GET", "reports", token=user.token, params={
+        "select": "id,type,species", "id": f"in.({','.join(commented_ids)})"}) if commented_ids else []
+    commented_by_id = {r["id"]: r for r in commented}
     for n in rows:
+        if n["kind"] == "new_comment":
+            report = commented_by_id.get(n["report_id"])
+            n["my_role"] = None if not report else (
+                "lost_owner" if report["type"] == "lost" else "found_owner")
+            n["species"] = report["species"] if report else None
+            continue
         report = info.get(n["match_id"])
         n["my_role"] = None if not report else (
             "lost_owner" if report["user_id"] == user.id else "found_owner")

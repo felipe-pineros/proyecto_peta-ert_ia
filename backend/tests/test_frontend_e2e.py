@@ -343,6 +343,17 @@ def test_otro_usuario_ve_el_reporte_sin_datos_privados(server, browser, users, s
     wa = unquote(page.get_attribute("#share-panel .share-whatsapp", "href"))
     assert wa.startswith("https://wa.me/?text=Se busca un perro (café con blanco, mediano)")
     assert "Parque de prueba" in wa and "300 000" not in wa and "4.6" not in wa
+    # Comentarios: Beto ayuda; puede dejar un teléfono, pero no un correo.
+    page.fill("#comment-body", "Lo vi ayer cerca del parque")
+    page.click("#comments-panel button[type=submit]")
+    page.wait_for_selector("#comments-panel .comment >> text=Lo vi ayer cerca del parque")
+    page.fill("#comment-body", "escríbeme a beto@gmail.com")
+    page.click("#comments-panel button[type=submit]")
+    page.wait_for_selector("#toast >> text=No escribas correos")
+    assert "beto@gmail.com" not in page.inner_text("#comments-panel .comment-list")
+    page.fill("#comment-body", "Si quieres, llámame al 300 123 4567")
+    page.click("#comments-panel button[type=submit]")
+    page.wait_for_selector("#comments-panel .comment >> text=300 123 4567")
     assert errors == []
 
 
@@ -354,7 +365,8 @@ def test_confirmar_coincidencia_y_aviso(server, browser, users, state):
         found = api.post("/api/reports", headers=h, json={
             "type": "found", "species": "dog", "color": "café", "size": "medium",
             "event_at": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
-            "lat": 4.65, "lng": -74.06, "contact_phone": "+57 322 222 2222"}).json()
+            "lat": 4.65, "lng": -74.06, "contact_phone": "+57 322 222 2222",
+            "contact_email": "beto@example.com"}).json()
         buf = BytesIO()
         Image.new("RGB", (64, 64), (90, 60, 30)).save(buf, format="PNG")
         assert api.post(f"/api/reports/{found['id']}/photos", headers=h,
@@ -386,15 +398,35 @@ def test_confirmar_coincidencia_y_aviso(server, browser, users, state):
     page.wait_for_selector(".match-item >> text=Parecido 91 %")
     page.click(".match-item >> text=Ver detalle")
     page.wait_for_selector("text=No es una confirmación", timeout=30_000)
+    # "Es mi mascota": ventana con advertencia y seña obligatoria.
     page.click("button:has-text('Es mi mascota')")
-    page.wait_for_selector(".contact-box >> text=+57 322 222 2222")
+    page.wait_for_selector("dialog.modal >> text=Antes de continuar")
+    page.click("dialog.modal >> text=Enviar solicitud")
+    page.wait_for_selector("dialog.modal >> text=al menos 8 caracteres")
+    page.fill("#claim-note", "collar rojo con placa")
+    page.click("dialog.modal >> text=Enviar solicitud")
+    # Beto tiene cuenta: mientras no acepte, Ana solo ve su correo (nunca el teléfono).
+    page.wait_for_selector(".contact-box >> text=Solicitud enviada")
+    assert page.is_visible(".contact-box >> text=beto@example.com")
+    assert "322 222" not in page.content()
 
-    # Beto ve el aviso, lo abre y encuentra el contacto de Ana.
+    # Beto ve el aviso, revisa la seña y acepta.
     page2 = new_page(browser, errors)
+    page2.on("dialog", lambda d: d.accept())
     login(page2, beto)
     page2.wait_for_selector("#notif-badge:not([hidden])")
-    assert page2.inner_text("#notif-badge") == "1"
+    if not EXTERNAL_BASE:  # con la IA activa también llega el aviso de "posible coincidencia"
+        assert page2.inner_text("#notif-badge") == "1"
     page2.click("[data-nav='notificaciones']")
-    page2.click(".notif-item >> text=El dueño confirmó que es su mascota")
+    page2.click(".notif-item >> text=dice que el animal que encontraste es suyo")
+    page2.wait_for_selector("text=Seña que escribió el dueño")
+    assert page2.is_visible("text=collar rojo con placa")
+    page2.click("button:has-text('Sí, es su mascota')")
     page2.wait_for_selector(".contact-box >> text=Prueba ana")
+
+    # Ana ve el teléfono con el botón (cuenta para el límite de 3 cada 24 horas).
+    page.reload()
+    page.click(".contact-box >> text=Ver teléfono")
+    page.wait_for_selector(".contact-box >> text=+57 322 222 2222")
+    assert page.get_attribute(".contact-box a:has-text('WhatsApp')", "href") == "https://wa.me/573222222222"
     assert errors == []

@@ -196,8 +196,11 @@ def test_usuario_con_cuenta_ve_reporte_del_invitado_y_confirma(api, admin, peopl
     assert r.is_success, r.text
     match_id = r.json()[0]["id"]
 
-    # El invitado no puede confirmar (D2); Carla sí, y recibe su teléfono para llamarle.
-    assert api.post(f"/api/matches/{match_id}/confirm", headers=guest["h"]).status_code == 403
-    confirmed = ok(api.post(f"/api/matches/{match_id}/confirm", headers=carla["h"]))
+    # El invitado no puede pedir contactos (D2). Carla sí: como el invitado no tiene cuenta y no
+    # puede aceptar, al pasar los filtros (seña, foto propia) se confirma y puede ver su teléfono.
+    note = {"note": "mancha blanca en el pecho"}
+    assert api.post(f"/api/matches/{match_id}/request", headers=guest["h"], json=note).status_code == 403
+    confirmed = ok(api.post(f"/api/matches/{match_id}/request", headers=carla["h"], json=note))
     assert confirmed["status"] == "confirmed"
-    assert confirmed["contact"]["phone"] == PHONE
+    assert confirmed["contact"]["has_phone"] and confirmed["contact"]["phone"] is None
+    assert ok(api.post(f"/api/matches/{match_id}/phone", headers=carla["h"]))["phone"] == PHONE

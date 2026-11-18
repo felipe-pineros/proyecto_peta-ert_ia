@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import ia, motor, supabase
 from .config import ROOT_DIR, get_settings
-from .routers import anuncios, coincidencias, fotos, mascotas, notificaciones, perfil, reportes
+from .routers import anuncios, coincidencias, comentarios, fotos, mascotas, notificaciones, perfil, reportes
 
 
 @asynccontextmanager
@@ -64,7 +64,7 @@ async def public_config():
             "features": {"read_ad": bool(s.gemini_api_key)}}
 
 
-for module in (perfil, mascotas, reportes, fotos, coincidencias, notificaciones, anuncios):
+for module in (perfil, mascotas, reportes, fotos, coincidencias, comentarios, notificaciones, anuncios):
     app.include_router(module.router)
 
 

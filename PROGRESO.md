@@ -207,6 +207,20 @@
   - En "Explorar" y "Mis reportes", un selector "Cuadrícula / Lista". La lista muestra una publicación por fila, como en las redes del celular: encabezado con tipo, lugar y fecha, foto grande, datos y señas particulares.
   - El navegador recuerda la elección (si no puede guardarla, usa cuadrícula).
   - La prueba del navegador cambia a la lista y abre un reporte desde ahí: 7/7 pasan. Capturas revisadas en celular (390 px) y en computador, sin desplazamiento horizontal.
+- **Protección del contacto, "Es mi mascota" y comentarios (2026-11-18). ✅ Probado.** Daniela aplicó la migración 6 en Supabase sin errores.
+  - Pedido por Daniela, con estas decisiones:
+    - botón "Es mi mascota" también en reportes encontrados de Explorar, con ventana de advertencia y una **seña** obligatoria que ve quien encontró;
+    - si quien encontró **tiene cuenta**, debe **aceptar**; mientras tanto el dueño solo ve su **correo**, y el teléfono al aceptar;
+    - si reportó **sin cuenta** (no puede aceptar), se aplican los filtros y, si pasan, el dueño ve el teléfono;
+    - filtros: reporte perdido publicado, misma especie, con foto propia (se rechaza si es casi idéntica a la de quien encontró, parecido ≥ 0,97), seña, y máximo **3 solicitudes cada 24 h**;
+    - cualquier persona puede ver máximo **3 teléfonos distintos cada 24 h** (botón "Ver teléfono"; volver a ver uno ya visto no gasta cupo);
+    - **comentarios** en reportes publicados: se permiten teléfonos (Daniela lo pidió), pero se rechazan correos y enlaces de chat; máximo 5 cada 10 minutos; los borra su autor o el dueño del reporte; el dueño recibe un aviso.
+  - Hallazgo de seguridad: antes, alguien podía copiar la foto de un reporte encontrado, publicarla como "perdida" y confirmar al instante para ver el teléfono. Ahora lo frenan el filtro de foto copiada, la aceptación y los límites.
+  - Archivos: migración `20261118000006_solicitudes_contacto_comentarios.sql`, `routers/coincidencias.py` (nuevas rutas `request`, `answer`, `phone`, `claim`), `routers/comentarios.py`, avisos nuevos (`match_requested`, `match_accepted`, `new_comment`) y pantallas en `js/app.js`.
+  - **Probado en un PostgreSQL temporal (Docker) que imita a Supabase:** las 6 migraciones se aplican sin error y pasan **42 comprobaciones** de los escenarios (`sh supabase/pruebas_locales/probar.sh`).
+  - **60/60 pruebas pasan contra el Supabase real** (2026-11-18). Capturas en celular revisadas: ventana de advertencia, solicitud enviada (solo correo) y comentarios; sin desplazamiento horizontal ni errores de JavaScript.
+  - **Falta en Render:** hacer **Manual Deploy** (la migración ya está aplicada).
+  - Ojo: un teléfono escrito en un comentario lo ve cualquier persona con cuenta (la pantalla lo advierte). El dueño del reporte puede borrar el comentario.
 
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.

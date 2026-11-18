@@ -260,9 +260,14 @@ def test_confirmar_solo_dueno_de_la_perdida(users, backend):
     assert len(ok(beto["db"].get(f"matches?id=eq.{match_id}"))) == 1
     assert beto["db"].patch(f"matches?id=eq.{match_id}", {"status": "confirmed"}).status_code in DENIED
 
-    # Beto (quien la encontró) no puede confirmar; Ana (dueña) sí.
-    assert beto["db"].rpc("confirm_match", {"p_match_id": match_id}).status_code in DENIED
-    ok(ana["db"].rpc("confirm_match", {"p_match_id": match_id}))
+    # Migración 6: confirmar directo ya no está permitido; se pide con seña y quien encontró acepta.
+    assert ana["db"].rpc("confirm_match", {"p_match_id": match_id}).status_code in DENIED
+    note = {"p_match_id": match_id, "p_note": "collar rojo con placa"}
+    assert beto["db"].rpc("request_match", note).status_code in DENIED          # Beto no es el dueño
+    assert ok(ana["db"].rpc("request_match", note)) == "requested"
+    assert ok(ana["db"].get(f"matches?id=eq.{match_id}"))[0]["status"] == "requested"
+    assert ana["db"].rpc("answer_match_request", {"p_match_id": match_id, "p_accept": True}).status_code in DENIED
+    assert ok(beto["db"].rpc("answer_match_request", {"p_match_id": match_id, "p_accept": True})) == "confirmed"
 
     assert ok(ana["db"].get(f"matches?id=eq.{match_id}"))[0]["status"] == "confirmed"
     assert ok(ana["db"].get(f"reports?id=eq.{lost_id}"))[0]["status"] == "resolved"
@@ -270,8 +275,11 @@ def test_confirmar_solo_dueno_de_la_perdida(users, backend):
     assert ok(ana["db"].patch(f"reports?id=eq.{lost_id}", {"color": "otro"})) == []
 
     avisos = ok(beto["db"].get(f"notifications?match_id=eq.{match_id}"))
-    assert [a["kind"] for a in avisos] == ["match_confirmed"]
-    assert ok(ana["db"].get(f"notifications?match_id=eq.{match_id}")) == []
+    assert [a["kind"] for a in avisos] == ["match_requested"]
+    assert [a["kind"] for a in ok(ana["db"].get(f"notifications?match_id=eq.{match_id}"))] == ["match_accepted"]
+    # Nadie puede leer el registro de teléfonos vistos ni usar reveal_phone desde la app.
+    assert ana["db"].get("contact_views").status_code in DENIED
+    assert ana["db"].rpc("reveal_phone", {"p_viewer": ana["id"], "p_match_id": match_id}).status_code in DENIED
 
 
 def test_descartar_y_notificaciones_sin_duplicados(users, backend):

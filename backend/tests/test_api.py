@@ -284,41 +284,123 @@ def test_publicado_conserva_al_menos_una_foto(api, users):
     assert api.delete(f"/api/photos/{only_photo}", headers=beto["h"]).status_code == 409
 
 
-def test_confirmar_coincidencia_comparte_contacto(api, users, admin):
+def test_es_mi_mascota_pide_aceptacion_y_comparte_contacto(api, users, admin):
     ana, beto = users["ana"], users["beto"]
     lost = active_report(api, ana, "lost", contact_email="ana@example.com")
-    found = active_report(api, beto, "found", contact_phone="+57 322 222 2222")
+    found = active_report(api, beto, "found", contact_phone="+57 322 222 2222",
+                          contact_email="beto@example.com")
     match_id = insert_match(admin, lost["id"], found["id"])
 
-    # Beto (encontró) la ve, pero no puede confirmarla (D2) y aún no ve contactos.
+    # Beto (encontró) la ve, pero no puede pedir el contacto (D2) y aún no ve contactos.
     listed = ok(api.get(f"/api/reports/{found['id']}/matches", headers=beto["h"]))
     assert [m["id"] for m in listed] == [match_id]
-    assert listed[0]["my_role"] == "found_owner" and not listed[0]["can_confirm"]
+    assert listed[0]["my_role"] == "found_owner" and not listed[0]["can_request"]
     assert listed[0]["other_report"]["id"] == lost["id"] and "user_id" not in listed[0]["other_report"]
     assert ok(api.get(f"/api/matches/{match_id}", headers=beto["h"]))["contact"] is None
-    assert api.post(f"/api/matches/{match_id}/confirm", headers=beto["h"]).status_code == 403
-    # Beto no puede ver las coincidencias de un reporte que no es suyo.
+    assert api.post(f"/api/matches/{match_id}/request", headers=beto["h"],
+                    json={"note": "collar rojo con placa"}).status_code == 403
     assert api.get(f"/api/reports/{lost['id']}/matches", headers=beto["h"]).status_code == 404
 
-    # Ana (perdió) confirma: ambos reportes se resuelven y se comparten los contactos.
-    confirmed = ok(api.post(f"/api/matches/{match_id}/confirm", headers=ana["h"]))
-    assert confirmed["status"] == "confirmed"
-    assert confirmed["contact"]["phone"] == "+57 322 222 2222"
-    assert confirmed["other_report"]["status"] == "resolved"
+    # Ana pide el contacto: sin seña no se puede; con seña queda esperando a Beto (tiene cuenta).
+    assert api.post(f"/api/matches/{match_id}/request", headers=ana["h"], json={"note": "rojo"}).status_code == 422
+    requested = ok(api.post(f"/api/matches/{match_id}/request", headers=ana["h"],
+                            json={"note": "collar rojo con placa"}))
+    assert requested["status"] == "requested" and requested["claim_note"] == "collar rojo con placa"
+    # Mientras Beto no acepta, Ana solo ve su CORREO (nunca el teléfono).
+    assert requested["contact"]["email"] == "beto@example.com"
+    assert requested["contact"]["phone"] is None and not requested["contact"]["has_phone"]
+    assert api.post(f"/api/matches/{match_id}/phone", headers=ana["h"]).status_code == 409
+    assert requested["other_report"]["status"] == "active"
+
+    # Beto ve la seña y un aviso; Ana no puede responder por él.
     beto_view = ok(api.get(f"/api/matches/{match_id}", headers=beto["h"]))
-    assert beto_view["contact"]["email"] == "ana@example.com"
-    assert beto_view["contact"]["display_name"] == "Prueba ana"
+    assert beto_view["can_answer"] and beto_view["claim_note"] == "collar rojo con placa"
+    assert beto_view["contact"] is None
+    assert api.post(f"/api/matches/{match_id}/answer", headers=ana["h"], json={"accept": True}).status_code == 403
+    notes = [n for n in ok(api.get("/api/notifications", headers=beto["h"])) if n["match_id"] == match_id]
+    assert [n["kind"] for n in notes] == ["match_requested"] and notes[0]["my_role"] == "found_owner"
+
+    # Beto acepta: ambos reportes se resuelven y se comparten los contactos.
+    accepted = ok(api.post(f"/api/matches/{match_id}/answer", headers=beto["h"], json={"accept": True}))
+    assert accepted["status"] == "confirmed" and accepted["other_report"]["status"] == "resolved"
+    assert accepted["contact"]["email"] == "ana@example.com"
+    assert accepted["contact"]["display_name"] == "Prueba ana"
+
+    # El teléfono no viene solo: se pide aparte (cuenta para el límite de 3 cada 24 h).
+    ana_view = ok(api.get(f"/api/matches/{match_id}", headers=ana["h"]))
+    assert ana_view["contact"]["phone"] is None and ana_view["contact"]["has_phone"]
+    assert ana_view["contact"]["phone_views_left"] == 3
+    shown = ok(api.post(f"/api/matches/{match_id}/phone", headers=ana["h"]))
+    assert shown == {"phone": "+57 322 222 2222", "phone_views_left": 2}
+    assert ok(api.get(f"/api/matches/{match_id}", headers=ana["h"]))["contact"]["phone"] == "+57 322 222 2222"
+    kinds = [n["kind"] for n in ok(api.get("/api/notifications", headers=ana["h"])) if n["match_id"] == match_id]
+    assert kinds == ["match_accepted"]
 
     # Beto sigue pudiendo ver la foto de Ana aunque el reporte ya no esté activo.
     ok(api.get(f"/api/photos/{lost['photos'][0]['id']}/url", headers=beto["h"]))
 
-    # Beto recibe UNA notificación y la marca como leída.
-    notes = [n for n in ok(api.get("/api/notifications", headers=beto["h"])) if n["match_id"] == match_id]
-    assert [n["kind"] for n in notes] == ["match_confirmed"]
+    # Beto marca su aviso como leído; Ana no puede marcar avisos ajenos.
     assert api.post(f"/api/notifications/{notes[0]['id']}/read", headers=beto["h"]).status_code == 204
     assert api.post(f"/api/notifications/{notes[0]['id']}/read", headers=ana["h"]).status_code == 404
     unread = ok(api.get("/api/notifications", headers=beto["h"], params={"unread_only": True}))
     assert notes[0]["id"] not in {n["id"] for n in unread}
+
+
+def test_maximo_tres_telefonos_cada_24_horas(api, users, admin):
+    ana, beto = users["ana"], users["beto"]
+    lost = active_report(api, ana, "lost")
+    ids = []
+    for i in range(4):
+        found = active_report(api, beto, "found", contact_phone=f"+57 311 000 000{i}")
+        match_id = insert_match(admin, lost["id"], found["id"])
+        r = admin.patch(f"{URL}/rest/v1/matches", headers=admin_headers(), params={"id": f"eq.{match_id}"},
+                        # Sin requested_at: así no gasta el cupo de 3 solicitudes de Ana en otras pruebas.
+                        json={"status": "confirmed", "decided_at": now_iso(), "claim_note": "prueba del límite"})
+        assert r.is_success, r.text
+        ids.append(match_id)
+    left = ok(api.get(f"/api/matches/{ids[0]}", headers=ana["h"]))["contact"]["phone_views_left"]
+    assert 0 <= left <= 3
+    for match_id in ids[:left]:
+        ok(api.post(f"/api/matches/{match_id}/phone", headers=ana["h"]))
+    blocked = api.post(f"/api/matches/{ids[left]}/phone", headers=ana["h"])
+    assert blocked.status_code == 429 and "3 teléfonos" in blocked.json()["detail"]
+    if left:  # uno ya visto se puede volver a ver sin gastar cupo
+        ok(api.post(f"/api/matches/{ids[0]}/phone", headers=ana["h"]))
+
+
+def test_es_mi_mascota_desde_explorar_y_comentarios(api, users, admin):
+    ana, beto = users["ana"], users["beto"]
+    lost = active_report(api, ana, "lost")
+    found = active_report(api, beto, "found")
+    gato = active_report(api, beto, "found", species="cat")
+
+    # Desde Explorar: solo con un reporte perdido propio, publicado y de la misma especie.
+    r = api.post(f"/api/reports/{gato['id']}/claim", headers=ana["h"],
+                 json={"lost_report_id": lost["id"], "note": "collar rojo con placa"})
+    assert r.status_code == 409 and "especies" in r.json()["detail"]
+    r = api.post(f"/api/reports/{found['id']}/claim", headers=beto["h"],
+                 json={"lost_report_id": lost["id"], "note": "collar rojo con placa"})
+    assert r.status_code == 403
+    claimed = ok(api.post(f"/api/reports/{found['id']}/claim", headers=ana["h"],
+                          json={"lost_report_id": lost["id"], "note": "collar rojo con placa"}))
+    assert claimed["origin"] == "claim" and claimed["status"] == "requested"
+    assert claimed["visual_score"] is None  # la IA está apagada en estas pruebas
+
+    # Comentarios: la comunidad ayuda, pero sin pasar contactos.
+    ok(api.post(f"/api/reports/{lost['id']}/comments", headers=beto["h"],
+                json={"body": "Lo vi ayer cerca del parque"}), 201)
+    r = api.post(f"/api/reports/{lost['id']}/comments", headers=beto["h"], json={"body": "escríbeme a beto@gmail.com"})
+    assert r.status_code == 409 and "correos" in r.json()["detail"]
+    ok(api.post(f"/api/reports/{lost['id']}/comments", headers=beto["h"],
+                json={"body": "Si quieres, llámame al 300 123 4567"}), 201)  # los teléfonos se permiten
+    comments = ok(api.get(f"/api/reports/{lost['id']}/comments", headers=ana["h"]))
+    assert [c["body"] for c in comments] == ["Lo vi ayer cerca del parque", "Si quieres, llámame al 300 123 4567"]
+    assert comments[0]["author"] == "Prueba beto" and comments[0]["can_delete"] and not comments[0]["is_mine"]
+    notes = [n for n in ok(api.get("/api/notifications", headers=ana["h"])) if n["kind"] == "new_comment"]
+    assert notes and notes[0]["report_id"] == lost["id"] and notes[0]["match_id"] is None
+    # Ana (dueña del reporte) lo borra.
+    assert api.delete(f"/api/comments/{comments[0]['id']}", headers=ana["h"]).status_code == 204
+    assert len(ok(api.get(f"/api/reports/{lost['id']}/comments", headers=beto["h"]))) == 1
 
 
 def test_descartar_y_retirar(api, users, admin):

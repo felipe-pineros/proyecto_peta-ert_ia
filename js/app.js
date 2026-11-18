@@ -92,7 +92,7 @@
   const TYPE = { lost: 'Perdida', found: 'Encontrada' };
   const STATUS = { draft: 'Borrador', active: 'Publicado', resolved: 'Resuelto', withdrawn: 'Retirado' };
   const SIZE = { small: 'Pequeño', medium: 'Mediano', large: 'Grande' };
-  const MATCH_STATUS = { suggested: 'Posible coincidencia', confirmed: 'Confirmada', discarded: 'Descartada' };
+  const MATCH_STATUS = { suggested: 'Posible coincidencia', requested: 'Esperando respuesta', confirmed: 'Confirmada', discarded: 'Descartada' };
   // Texto de cada aviso según quién lo recibe (n.my_role) y la especie (n.species).
   function notifText(n) {
     const animal = n.species === 'cat' ? 'un gato' : n.species === 'dog' ? 'un perro' : 'una mascota';
@@ -101,15 +101,23 @@
         ? 'El animal que encontraste se parece a ' + animal + ' reportado como perdido'
         : '¡Posible coincidencia! Encontraron ' + animal + ' que se parece a tu mascota';
     }
+    if (n.kind === 'match_requested') return 'El dueño de ' + animal + ' perdido dice que el animal que encontraste es suyo';
+    if (n.kind === 'match_accepted') return 'Quien encontró la mascota aceptó tu solicitud: ya puedes ver su teléfono';
     if (n.kind === 'match_confirmed') return 'El dueño confirmó que es su mascota: ya puedes ver su contacto';
     if (n.kind === 'match_discarded') return 'Una posible coincidencia fue descartada';
+    if (n.kind === 'new_comment') return 'Nuevo comentario en tu reporte';
     return 'Aviso';
   }
-  const notifHint = (n) => (n.kind === 'new_match'
-    ? (n.my_role === 'found_owner'
-      ? 'Cuando el dueño confirme que es su mascota, verás su contacto y él verá el tuyo.'
-      : 'Compara las fotos. Si es tu mascota, pulsa "Es mi mascota" para ver el contacto de quien la encontró.')
-    : '');
+  function notifHint(n) {
+    if (n.kind === 'new_match') {
+      return n.my_role === 'found_owner'
+        ? 'Si el dueño pide tu contacto, te avisaremos para que aceptes o no.'
+        : 'Compara las fotos. Si es tu mascota, pulsa "Es mi mascota" para pedir el contacto de quien la encontró.';
+    }
+    if (n.kind === 'match_requested') return 'Revisa su seña y sus fotos, y acepta o rechaza. Tu teléfono solo se comparte si aceptas.';
+    if (n.kind === 'new_comment') return 'Alguien de la comunidad escribió en tu reporte.';
+    return '';
+  }
   const speciesName = (code) => (speciesList.find((s) => s.code === code) || {}).name_es || code;
   const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
   const pct = (x) => Math.round(Number(x) * 100) + ' %';
@@ -382,27 +390,41 @@
         }
       }
       right.append(matchPanel);
+    } else if (r.status === 'active' && r.type === 'found') {
+      // Reporte encontrado de otra persona: "Es mi mascota" (con filtros y advertencia).
+      const mine = (await api('/api/reports/mine')).filter((x) => x.type === 'lost' && x.status === 'active' && x.species === r.species);
+      const panel = el('div', { class: 'panel' }, el('h3', { text: '¿Es tu mascota?' }));
+      if (mine.length) {
+        panel.append(
+          el('p', { class: 'hint', style: 'margin:-6px 0 12px;', text: 'Por seguridad, el contacto de quien la encontró no se publica. Pídelo con "Es mi mascota": escribirás una seña que solo tú conoces y quien la encontró la revisará.' }),
+          el('button', { class: 'btn btn-coral', type: 'button', text: 'Es mi mascota', onclick: async (e) => {
+            const btn = e.currentTarget;
+            const answer = await claimDialog({ lostReports: mine });
+            if (!answer) return;
+            const done = busy(btn, 'Enviando…');
+            try {
+              afterRequest(await api('/api/reports/' + r.id + '/claim', { method: 'POST', body: { note: answer.note, lost_report_id: answer.lostReportId } }));
+            } catch (err) { done(); toast(err.message, true, 9000); }
+          } }));
+      } else {
+        panel.append(
+          el('p', { class: 'hint', style: 'margin:-6px 0 12px;', text: 'Por seguridad, el contacto de quien la encontró no se publica. Para pedirlo:' }),
+          el('ol', { class: 'steps-list' },
+            el('li', { text: 'Publica un reporte de tu ' + speciesName(r.species).toLowerCase() + ' perdido con una foto tuya (no copies la de este reporte).' }),
+            el('li', { text: 'Vuelve aquí y pulsa "Es mi mascota", o espera el aviso si PetAlert encuentra el parecido.' }),
+            el('li', { text: 'Quien la encontró revisa tu seña y acepta; entonces verás su teléfono.' })),
+          el('div', { class: 'btn-row', style: 'margin-top:12px;' },
+            el('a', { class: 'btn btn-coral', href: '#nuevo/lost', text: 'Reportar mi mascota perdida' })));
+      }
+      right.append(panel);
     } else if (r.status === 'active') {
-      // Reporte de otra persona: explicar cómo se llega al contacto (es privado hasta confirmar).
-      const isFound = r.type === 'found';
       right.append(el('div', { class: 'panel' },
-        el('h3', { text: isFound ? '¿Es tu mascota? Así contactas a quien la encontró' : '¿Viste a esta mascota?' }),
-        el('p', { class: 'hint', style: 'margin:-6px 0 12px;', text: isFound
-          ? 'Por seguridad, el teléfono y el correo de quien la encontró no se publican. Se comparten contigo cuando confirmas que es tu mascota:'
-          : 'Por seguridad, el contacto del dueño no se publica. Se comparte cuando él confirma que el animal que encontraste es su mascota:' }),
-        el('ol', { class: 'steps-list' },
-          el('li', { text: isFound
-            ? 'Publica un reporte de mascota perdida con fotos claras (si ya lo tienes, revisa "Mis reportes").'
-            : 'Publica un reporte de mascota encontrada con una foto del animal.' }),
-          el('li', { text: 'PetAlert compara las fotos y la cercanía y les envía un aviso a ambos en "Avisos".' }),
-          el('li', { text: isFound
-            ? 'Abre la coincidencia y pulsa "Es mi mascota": verás su teléfono y correo.'
-            : 'Cuando el dueño confirme, los dos verán el contacto del otro.' })),
-        el('div', { class: 'btn-row', style: 'margin-top:12px;' },
-          el('a', { class: 'btn btn-coral', href: isFound ? '#nuevo/lost' : '#nuevo/found',
-            text: isFound ? 'Reportar mi mascota perdida' : 'Reportar que la encontré' }),
-          isFound ? el('a', { class: 'btn btn-outline', href: '#mis-reportes', text: 'Ver mis reportes' }) : null)));
+        el('h3', { text: '¿Viste a esta mascota?' }),
+        el('p', { class: 'hint', style: 'margin:-6px 0 12px;', text: 'Cuéntalo en los comentarios o publica un reporte de mascota encontrada con una foto: PetAlert le avisará al dueño.' }),
+        el('a', { class: 'btn btn-coral', href: '#nuevo/found', text: 'Reportar que la encontré' })));
     }
+
+    if (r.status === 'active' || (r.is_mine && r.status !== 'draft')) right.append(await commentsPanel(r));
 
     return el('section', null,
       el('a', { class: 'back-link', href: r.is_mine ? '#mis-reportes' : '#explorar', text: '← Volver' }),
@@ -411,26 +433,142 @@
   }
 
   // -------------------------------------------------------------------------
+  // Comentarios de un reporte (sin correos ni enlaces de chat: la base los rechaza; teléfonos sí)
+  // -------------------------------------------------------------------------
+  async function commentsPanel(r) {
+    const list = el('div', { class: 'comment-list' });
+    const canWrite = r.status === 'active';
+    async function load() {
+      const rows = await api('/api/reports/' + r.id + '/comments');
+      list.replaceChildren(...rows.map((c) => el('div', { class: 'comment' },
+        el('div', { class: 'comment-head' },
+          el('strong', { text: c.author }),
+          c.is_report_owner ? el('span', { class: 'badge badge-active', text: 'Autor del reporte' }) : null,
+          el('small', { text: fmtDate(c.created_at) }),
+          c.can_delete ? el('button', { class: 'link comment-delete', type: 'button', text: 'Borrar', onclick: async () => {
+            if (!confirm('¿Borrar este comentario?')) return;
+            try { await api('/api/comments/' + c.id, { method: 'DELETE' }); await load(); } catch (err) { toast(err.message, true); }
+          } }) : null),
+        el('p', { text: c.body }))));
+      if (!rows.length) list.append(el('p', { class: 'muted', text: canWrite ? 'Aún no hay comentarios. ¿Viste algo? Cuéntalo aquí.' : 'No hay comentarios.' }));
+    }
+    let form = null;
+    if (canWrite) {
+      const text = el('textarea', { id: 'comment-body', rows: 2, maxlength: 500, placeholder: 'Ej.: lo vi ayer cerca del parque, iba con un collar azul' });
+      const send = el('button', { class: 'btn btn-primary btn-sm', type: 'submit', text: 'Comentar' });
+      form = el('form', { class: 'comment-form' },
+        el('label', { for: 'comment-body', class: 'sr-only', text: 'Escribe un comentario' }), text,
+        el('p', { class: 'hint', text: 'Los comentarios los ve cualquier persona con cuenta. Si escribes un teléfono, será público. No se permiten correos ni enlaces de chat.' }),
+        el('div', { class: 'btn-row', style: 'justify-content:flex-end;' }, send));
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (text.value.trim().length < 2) { text.focus(); return; }
+        const done = busy(send, 'Enviando…');
+        try { await api('/api/reports/' + r.id + '/comments', { method: 'POST', body: { body: text.value.trim() } }); text.value = ''; await load(); } catch (err) { toast(err.message, true, 9000); }
+        done();
+      });
+    }
+    try { await load(); } catch (err) { list.append(el('p', { class: 'muted', text: 'No se pudieron cargar los comentarios.' })); }
+    return el('div', { class: 'panel', id: 'comments-panel' }, el('h3', { text: 'Comentarios' }), list, form);
+  }
+
+  // -------------------------------------------------------------------------
+  // "Es mi mascota": advertencia + seña obligatoria (decisión de Daniela, 2026-11-18)
+  // -------------------------------------------------------------------------
+  // opts.lostReports: si viene de Explorar, la persona elige cuál de sus reportes perdidos es.
+  // Devuelve { note, lostReportId } o null si cancela.
+  function claimDialog(opts) {
+    const o = opts || {};
+    return new Promise((resolve) => {
+      const note = el('textarea', { id: 'claim-note', rows: 3, maxlength: 300,
+        placeholder: 'Ej.: collar rojo con placa, cicatriz en la oreja izquierda, responde a "Toby"' });
+      const pick = o.lostReports && o.lostReports.length > 1
+        ? selectEl('claim-lost', o.lostReports.map((r) => [r.id, reportTitle(r) + ' · ' + ([r.color, r.location_label].filter(Boolean).join(' · ') || fmtDate(r.event_at))]))
+        : null;
+      const error = el('p', { class: 'form-error', role: 'alert', hidden: true });
+      const cancel = el('button', { class: 'btn btn-outline', type: 'button', text: 'Cancelar' });
+      const send = el('button', { class: 'btn btn-coral', type: 'submit', text: 'Enviar solicitud' });
+      const form = el('form', { method: 'dialog', class: 'modal-body' },
+        el('h3', { id: 'claim-title', text: '¿Es tu mascota?' }),
+        el('div', { class: 'modal-warning' },
+          el('strong', { text: 'Antes de continuar, lee esto:' }),
+          el('ul', null,
+            el('li', { text: 'Pide el contacto solo si de verdad crees que es tu mascota. Reclamar animales ajenos para obtener datos de otras personas es un mal uso de PetAlert y queda registrado con tu cuenta.' }),
+            el('li', { text: 'Quien la encontró verá tu seña y las fotos de tu reporte para comprobar que eres el dueño.' }),
+            el('li', { text: 'Si tiene cuenta, debe aceptar: mientras tanto solo verás su correo. Si reportó sin cuenta, verás su teléfono al enviar.' }),
+            el('li', { text: 'Puedes hacer máximo 3 solicitudes y ver máximo 3 teléfonos cada 24 horas.' }))),
+        pick ? field('¿Cuál de tus mascotas perdidas es?', pick) : null,
+        field('Seña particular que solo tú conoces', note, { hint: 'Entre 8 y 300 caracteres. No escribas tu teléfono aquí.' }),
+        error,
+        el('div', { class: 'btn-row', style: 'justify-content:flex-end; margin-top:14px;' }, cancel, send));
+      const dlg = el('dialog', { class: 'modal', 'aria-labelledby': 'claim-title' }, form);
+      let answer = null;
+      cancel.addEventListener('click', () => dlg.close());
+      form.addEventListener('submit', (e) => {
+        const text = note.value.trim();
+        if (text.length < 8) {
+          e.preventDefault();
+          error.textContent = 'Escribe una seña de al menos 8 caracteres.';
+          error.hidden = false;
+          note.focus();
+          return;
+        }
+        answer = { note: text, lostReportId: pick ? pick.value : (o.lostReports && o.lostReports[0] && o.lostReports[0].id) };
+      });
+      dlg.addEventListener('close', () => { dlg.remove(); resolve(answer); });
+      document.body.append(dlg);
+      dlg.showModal();
+      note.focus();
+    });
+  }
+
+  function afterRequest(m) {
+    toast(m.status === 'confirmed'
+      ? 'Listo: ya puedes ver el contacto de quien la encontró.'
+      : 'Solicitud enviada. Mientras quien la encontró acepta, puedes escribirle a su correo.', false, 8000);
+    location.hash = '#coincidencia/' + m.id;
+    route();
+  }
+
+  // -------------------------------------------------------------------------
   // Coincidencias
   // -------------------------------------------------------------------------
   function matchActions(m) {
     const row = el('div', { class: 'btn-row' });
-    if (m.can_confirm) {
+    if (m.can_request) {
       row.append(el('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Es mi mascota', onclick: async (e) => {
-        if (!confirm('¿Confirmas que es tu mascota?\n\nAmbos reportes quedarán resueltos y se compartirán los datos de contacto entre las dos personas.')) return;
-        const done = busy(e.currentTarget, 'Confirmando…');
-        try { await api('/api/matches/' + m.id + '/confirm', { method: 'POST' }); toast('Coincidencia confirmada'); location.hash = '#coincidencia/' + m.id; route(); } catch (err) { done(); toast(err.message, true); }
+        const btn = e.currentTarget;
+        const answer = await claimDialog();
+        if (!answer) return;
+        const done = busy(btn, 'Enviando…');
+        try { afterRequest(await api('/api/matches/' + m.id + '/request', { method: 'POST', body: { note: answer.note } })); } catch (err) { done(); toast(err.message, true, 9000); }
+      } }));
+    }
+    if (m.can_answer) {
+      row.append(el('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Sí, es su mascota', onclick: async (e) => {
+        if (!confirm('¿Aceptas que es su mascota?\n\nSe compartirán los contactos entre las dos personas y ambos reportes quedarán resueltos.')) return;
+        const done = busy(e.currentTarget, 'Aceptando…');
+        try { await api('/api/matches/' + m.id + '/answer', { method: 'POST', body: { accept: true } }); toast('Aceptado: ya pueden contactarse'); route(); } catch (err) { done(); toast(err.message, true); }
+      } }));
+      row.append(el('button', { class: 'btn btn-danger btn-sm', type: 'button', text: 'No es su mascota', onclick: async (e) => {
+        if (!confirm('¿Rechazar la solicitud? No se compartirá tu teléfono.')) return;
+        const done = busy(e.currentTarget, 'Rechazando…');
+        try { await api('/api/matches/' + m.id + '/answer', { method: 'POST', body: { accept: false } }); toast('Solicitud rechazada'); route(); } catch (err) { done(); toast(err.message, true); }
       } }));
     }
     if (m.can_discard) {
-      row.append(el('button', { class: 'btn btn-danger btn-sm', type: 'button', text: 'No es', onclick: async (e) => {
-        if (!confirm('¿Descartar esta posible coincidencia? No volverá a sugerirse.')) return;
+      const cancelling = m.status === 'requested';
+      row.append(el('button', { class: 'btn btn-danger btn-sm', type: 'button', text: cancelling ? 'Cancelar solicitud' : 'No es', onclick: async (e) => {
+        if (!confirm(cancelling ? '¿Cancelar tu solicitud de contacto?' : '¿Descartar esta posible coincidencia? No volverá a sugerirse.')) return;
         const done = busy(e.currentTarget, 'Descartando…');
-        try { await api('/api/matches/' + m.id + '/discard', { method: 'POST' }); toast('Coincidencia descartada'); route(); } catch (err) { done(); toast(err.message, true); }
+        try { await api('/api/matches/' + m.id + '/discard', { method: 'POST' }); toast(cancelling ? 'Solicitud cancelada' : 'Coincidencia descartada'); route(); } catch (err) { done(); toast(err.message, true); }
       } }));
     }
     return row;
   }
+
+  const scoreText = (m) => (m.visual_score === null || m.visual_score === undefined
+    ? (m.origin === 'claim' ? 'Pedida por el dueño' : 'Sin puntaje') : 'Parecido ' + pct(m.visual_score));
 
   function matchItem(m) {
     const o = m.other_report;
@@ -438,11 +576,40 @@
       photoImg(firstPhoto(o), 'thumb', 'Foto del otro reporte'),
       el('div', null,
         el('div', { class: 'badges', style: 'margin-bottom:6px;' }, badge(m.status, MATCH_STATUS[m.status])),
-        el('p', null, el('span', { class: 'score', text: 'Parecido ' + pct(m.visual_score) }), ' · a ' + km(m.distance_km)),
+        el('p', null, el('span', { class: 'score', text: scoreText(m) }), ' · a ' + km(m.distance_km)),
         el('p', { class: 'muted', text: [speciesName(o.species), o.color, SIZE[o.size]].filter(Boolean).join(' · ') + ' · ' + fmtDate(o.event_at) }),
         el('div', { class: 'btn-row', style: 'margin-top:10px;' },
           el('a', { class: 'btn btn-outline btn-sm', href: '#coincidencia/' + m.id, text: 'Ver detalle' }),
           matchActions(m))));
+  }
+
+  // Recuadro de contacto de una coincidencia confirmada. El teléfono se pide con un botón (límite 3/24 h).
+  function contactBox(m) {
+    const c = m.contact;
+    const rows = el('dl', { class: 'facts', style: 'margin-top:8px;' },
+      el('dt', { text: 'Nombre' }), el('dd', { text: c.display_name || '—' }),
+      el('dt', { text: 'Correo' }), el('dd', { text: c.email || '—' }));
+    const links = el('div', { class: 'btn-row', style: 'margin-top:10px;' });
+    if (c.phone) {
+      const digits = c.phone.replace(/\D/g, '');
+      // Celular colombiano sin indicativo (10 dígitos que empiezan por 3) → se agrega el 57.
+      const wa = digits.length === 10 && digits[0] === '3' ? '57' + digits : digits;
+      rows.append(el('dt', { text: 'Teléfono' }), el('dd', { text: c.phone }));
+      links.append(
+        el('a', { class: 'btn btn-primary btn-sm', href: 'tel:+' + wa, text: 'Llamar' }),
+        el('a', { class: 'btn btn-primary btn-sm', href: 'https://wa.me/' + wa, target: '_blank', rel: 'noopener', text: 'WhatsApp' }));
+    } else if (c.has_phone) {
+      links.append(el('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Ver teléfono', onclick: async (e) => {
+        const done = busy(e.currentTarget, 'Cargando…');
+        try { await api('/api/matches/' + m.id + '/phone', { method: 'POST' }); route(); } catch (err) { done(); toast(err.message, true, 10000); }
+      } }));
+    }
+    if (c.email) links.append(el('a', { class: 'btn btn-outline btn-sm', href: 'mailto:' + c.email, text: 'Enviar correo' }));
+    return el('div', { class: 'contact-box' },
+      el('strong', { text: m.my_role === 'lost_owner' ? 'Contacto de quien encontró a tu mascota' : 'Contacto del dueño de la mascota' }),
+      rows, links,
+      !c.phone && c.has_phone ? el('p', { class: 'hint', style: 'margin-top:8px;', text: 'Por seguridad, cada persona puede ver máximo 3 teléfonos cada 24 horas. Hoy te quedan ' + c.phone_views_left + '.' }) : null,
+      el('p', { class: 'hint', style: 'margin-top:10px;', text: 'Acuerden un lugar público para el encuentro y pide fotos o detalles que solo el dueño conozca.' }));
   }
 
   async function viewMatch(id) {
@@ -462,28 +629,26 @@
     fact(o.type === 'lost' ? 'Se perdió' : 'Se encontró', fmtDate(o.event_at));
     fact('Lugar', o.location_label);
 
+    const owner = m.my_role === 'lost_owner';
+    const sena = m.claim_note ? el('div', { class: 'notice', style: 'margin-bottom:12px;' },
+      el('strong', { text: owner ? 'Tu seña: ' : 'Seña que escribió el dueño: ' }), m.claim_note) : null;
     let contact;
-    if (m.contact) {
-      const c = m.contact;
-      const digits = (c.phone || '').replace(/\D/g, '');
-      // Celular colombiano sin indicativo (10 dígitos que empiezan por 3) → se agrega el 57.
-      const wa = digits.length === 10 && digits[0] === '3' ? '57' + digits : digits;
-      const links = el('div', { class: 'btn-row', style: 'margin-top:10px;' },
-        digits ? el('a', { class: 'btn btn-primary btn-sm', href: 'tel:+' + wa, text: 'Llamar' }) : null,
-        digits ? el('a', { class: 'btn btn-primary btn-sm', href: 'https://wa.me/' + wa, target: '_blank', rel: 'noopener', text: 'WhatsApp' }) : null,
-        c.email ? el('a', { class: 'btn btn-outline btn-sm', href: 'mailto:' + c.email, text: 'Enviar correo' }) : null);
+    if (m.status === 'confirmed' && m.contact) {
+      contact = contactBox(m);
+    } else if (m.status === 'requested' && owner) {
+      const c = m.contact || {};
       contact = el('div', { class: 'contact-box' },
-        el('strong', { text: m.my_role === 'lost_owner' ? 'Contacto de quien encontró a tu mascota' : 'Contacto del dueño de la mascota' }),
-        el('dl', { class: 'facts', style: 'margin-top:8px;' },
-          el('dt', { text: 'Nombre' }), el('dd', { text: c.display_name || '—' }),
-          el('dt', { text: 'Teléfono' }), el('dd', { text: c.phone || '—' }),
-          el('dt', { text: 'Correo' }), el('dd', { text: c.email || '—' })),
-        links,
-        el('p', { class: 'hint', style: 'margin-top:10px;', text: 'Acuerden un lugar público para el encuentro y pide fotos o detalles que solo el dueño conozca.' }));
+        el('strong', { text: 'Solicitud enviada' }),
+        el('p', { style: 'margin-top:6px;', text: 'Quien la encontró debe aceptar para que veas su teléfono. Te avisaremos en "Avisos".' }),
+        c.email
+          ? el('p', { style: 'margin-top:6px;' }, 'Mientras tanto puedes escribirle: ', el('a', { class: 'link', href: 'mailto:' + c.email, text: c.email }))
+          : el('p', { class: 'muted', style: 'margin-top:6px;', text: 'Esta persona no dejó correo; espera a que acepte.' }));
+    } else if (m.status === 'requested') {
+      contact = el('p', { text: 'La persona que perdió esta mascota dice que es suya. Compara sus fotos y su seña. Si aceptas, verás su contacto y ella podrá ver tu teléfono; si no, no se comparte nada.' });
     } else if (m.status === 'suggested') {
-      contact = el('p', { class: 'muted', text: m.can_confirm
-        ? 'El teléfono y el correo de quien la encontró se muestran aquí cuando confirmas que es tu mascota. Si la reconoces, pulsa "Es mi mascota".'
-        : 'Tu contacto y el del dueño se comparten cuando él confirme que es su mascota. Te avisaremos en "Avisos".' });
+      contact = el('p', { class: 'muted', text: m.can_request
+        ? 'Si reconoces a tu mascota, pulsa "Es mi mascota". Escribirás una seña que solo tú conoces y quien la encontró la verá.'
+        : 'Si el dueño pide tu contacto, te avisaremos para que decidas si aceptas. Tu teléfono no se comparte sin tu permiso.' });
     } else {
       contact = el('p', { class: 'muted', text: 'Esta coincidencia fue descartada.' });
     }
@@ -491,7 +656,9 @@
     return el('section', null,
       el('a', { class: 'back-link', href: '#reporte/' + m.my_report_id, text: '← Volver a mi reporte' }),
       viewHead('Coincidencia', MATCH_STATUS[m.status]),
-      el('p', { class: 'notice', style: 'margin-bottom:20px;', text: 'El sistema sugiere que podría tratarse del mismo animal por el parecido de las fotos y la cercanía. No es una confirmación: compara bien las fotos y los rasgos.' }),
+      el('p', { class: 'notice', style: 'margin-bottom:20px;', text: m.origin === 'claim'
+        ? 'El dueño de la mascota perdida señaló este reporte. No es una confirmación: compara bien las fotos, los rasgos y la seña.'
+        : 'El sistema sugiere que podría tratarse del mismo animal por el parecido de las fotos y la cercanía. No es una confirmación: compara bien las fotos y los rasgos.' }),
       el('div', { class: 'detail-grid' },
         el('div', null,
           el('div', { class: 'panel' },
@@ -499,14 +666,14 @@
             photos.length ? el('div', { class: 'photo-grid' }, photos.map((p, i) => photoImg(p.id, 'thumb', 'Foto ' + (i + 1)))) : el('p', { class: 'muted', text: 'Sin fotos disponibles.' })),
           el('div', { class: 'panel' }, el('h3', { text: 'Datos' }), facts)),
         el('div', null,
-          el('div', { class: 'panel' },
-            el('h3', { text: 'Por qué se sugiere' }),
-            el('dl', { class: 'facts' },
-              el('dt', { text: 'Parecido de fotos' }), el('dd', { text: pct(m.visual_score) }),
-              el('dt', { text: 'Distancia aprox.' }), el('dd', { text: km(m.distance_km) }),
-              el('dt', { text: 'Puntaje total' }), el('dd', { text: pct(m.total_score) }))),
-          el('div', { class: 'panel' }, el('h3', { text: 'Contacto' }), contact,
+          el('div', { class: 'panel' }, el('h3', { text: 'Contacto' }), sena, contact,
             el('div', { style: 'margin-top:14px;' }, matchActions(m))),
+          el('div', { class: 'panel' },
+            el('h3', { text: m.origin === 'claim' ? 'Datos de la solicitud' : 'Por qué se sugiere' }),
+            el('dl', { class: 'facts' },
+              el('dt', { text: 'Parecido de fotos' }), el('dd', { text: m.visual_score === null ? '—' : pct(m.visual_score) }),
+              el('dt', { text: 'Distancia aprox.' }), el('dd', { text: km(m.distance_km) }),
+              el('dt', { text: 'Puntaje total' }), el('dd', { text: m.total_score === null ? '—' : pct(m.total_score) }))),
           el('div', { class: 'panel' }, el('h3', { text: 'Ubicación aproximada' }), mapBox))));
   }
 
@@ -520,7 +687,7 @@
       onclick: async () => {
         if (!n.read_at) { try { await api('/api/notifications/' + n.id + '/read', { method: 'POST' }); } catch (e) { /* no bloquea */ } }
         refreshBadge();
-        location.hash = '#coincidencia/' + n.match_id;
+        location.hash = n.match_id ? '#coincidencia/' + n.match_id : '#reporte/' + n.report_id;
       },
     }, el('span', null, el('strong', { text: notifText(n) }), el('br'),
       notifHint(n) ? el('span', { class: 'muted', text: notifHint(n) }) : null, notifHint(n) ? el('br') : null,

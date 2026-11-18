@@ -5,6 +5,7 @@ vuelve a comprobarlo todo, así que esto no es la única barrera.
 """
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
@@ -116,3 +117,22 @@ class ReportUpdate(_Input):
         if (self.lat is None) != (self.lng is None):
             raise ValueError("Envía lat y lng juntos")
         return self
+
+
+# ---------------------------------------------------------------------------
+# "Es mi mascota" y comentarios (migración 6). La base vuelve a validar todo.
+class MatchRequest(_Input):
+    # Seña que solo el dueño conoce (collar, cicatriz, nombre al que responde…).
+    note: _txt(300, min_len=8)
+
+
+class MatchClaim(MatchRequest):
+    lost_report_id: UUID
+
+
+class MatchAnswer(_Input):
+    accept: bool
+
+
+class CommentCreate(_Input):
+    body: _txt(500, min_len=2)
