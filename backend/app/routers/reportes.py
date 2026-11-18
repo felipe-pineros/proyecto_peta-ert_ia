@@ -86,7 +86,24 @@ async def list_active_reports(
         params["species"] = f"eq.{species}"
     rows = await supabase.db("GET", "reports", token=user.token, params=params)
     await attach_photos(rows, token=user.token)
+    await attach_comment_counts(rows, user)
     return [present(r, user) for r in rows]
+
+
+async def attach_comment_counts(reports: list[dict], user: User) -> None:
+    """Cuántos comentarios tiene cada reporte (para mostrarlo en Explorar, como en las redes)."""
+    for r in reports:
+        r["comment_count"] = 0
+    if not reports:
+        return
+    ids = ",".join(r["id"] for r in reports)
+    rows = await supabase.db("GET", "report_comments", token=user.token, params={
+        "select": "report_id", "report_id": f"in.({ids})", "limit": "5000"})
+    counts: dict[str, int] = {}
+    for c in rows:
+        counts[c["report_id"]] = counts.get(c["report_id"], 0) + 1
+    for r in reports:
+        r["comment_count"] = counts.get(r["id"], 0)
 
 
 @router.get("/mine")

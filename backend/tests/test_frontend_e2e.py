@@ -376,7 +376,14 @@ def test_otro_usuario_ve_el_reporte_sin_datos_privados(server, browser, users, s
     # Cambia a la vista en lista (como en redes) y abre el reporte desde ahí.
     page.click(".layout-btn[data-layout='list']")
     assert page.get_attribute(".layout-btn[data-layout='list']", "aria-pressed") == "true"
-    page.wait_for_selector(f".card-feed a.report-post[href='#reporte/{state['ana_report']}']").click()
+    post = page.locator(".card-feed .report-post", has=page.locator(f"a[href='#reporte/{state['ana_report']}']"))
+    # Comenta desde Explorar, sin entrar al reporte (como en las redes).
+    post.locator("button.post-action").click()
+    post.locator("textarea").fill("Creo que lo vi en la panadería de la esquina")
+    post.locator("button[type=submit]").click()
+    post.locator(".comment >> text=Creo que lo vi en la panadería").wait_for()
+    assert post.locator("button.post-action").inner_text() == "Comentarios (1)"
+    post.locator("a.post-link").click()
     page.wait_for_selector("#detail-map path.leaflet-interactive")  # círculo aproximado, no el punto
     assert page.query_selector("#detail-map .leaflet-marker-icon") is None
     assert "Tu contacto (privado)" not in page.content()

@@ -169,12 +169,39 @@
           r.is_mine ? badge(r.status, STATUS[r.status]) : null),
         el('h3', { text: reportTitle(r) }),
         el('p', { class: 'meta', text: [r.color, SIZE[r.size], r.breed].filter(Boolean).join(' · ') }),
-        el('p', { class: 'meta', text: (r.location_label || 'Ubicación en el mapa') + ' · ' + fmtDate(r.event_at) })));
+        el('p', { class: 'meta', text: (r.location_label || 'Ubicación en el mapa') + ' · ' + fmtDate(r.event_at) }),
+        r.comment_count ? el('p', { class: 'meta meta-comments', text: r.comment_count + (r.comment_count === 1 ? ' comentario' : ' comentarios') }) : null));
   }
 
   // Vista "lista": una publicación por fila, como en las redes sociales del celular.
   function reportPost(r) {
-    return el('a', { class: 'report-post', href: '#reporte/' + r.id },
+    // Comentarios dentro de la publicación (sin entrar al reporte), como en las redes.
+    let actions = null;
+    let commentsBox = null;
+    if (r.status === 'active') {
+      commentsBox = el('div', { class: 'post-comments', hidden: true });
+      let loaded = false;
+      const label = () => (r.comment_count ? 'Comentarios (' + r.comment_count + ')' : 'Comentar');
+      const toggle = el('button', { class: 'post-action', type: 'button', 'aria-expanded': 'false', text: label(), onclick: async () => {
+        const open = commentsBox.hidden;
+        commentsBox.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        if (open && !loaded) {
+          loaded = true;
+          commentsBox.append(await commentsPanel(r, { inline: true, onCount: (n) => { r.comment_count = n; toggle.textContent = label(); } }));
+          const box = commentsBox.querySelector('textarea');
+          if (box) box.focus({ preventScroll: true });
+        }
+      } });
+      actions = el('div', { class: 'post-actions' }, toggle,
+        el('a', { class: 'post-action', href: '#reporte/' + r.id, text: 'Ver reporte' }));
+    }
+    return el('article', { class: 'report-post' },
+      reportPostLink(r), actions, commentsBox);
+  }
+
+  function reportPostLink(r) {
+    return el('a', { class: 'post-link', href: '#reporte/' + r.id },
       el('div', { class: 'post-head' },
         el('span', { class: 'post-avatar post-avatar-' + r.type, 'aria-hidden': 'true', text: r.type === 'lost' ? '!' : '✓' }),
         el('div', { class: 'post-head-text' },
@@ -185,7 +212,7 @@
       el('div', { class: 'post-body' },
         el('p', { class: 'post-facts', text: [r.color, SIZE[r.size], r.breed].filter(Boolean).join(' · ') || speciesName(r.species) }),
         r.distinctive_features ? el('p', { class: 'post-text', text: r.distinctive_features }) : null,
-        el('span', { class: 'post-cta', text: 'Ver reporte →' })));
+        r.status === 'active' ? null : el('span', { class: 'post-cta', text: 'Ver reporte →' })));
   }
 
   // Cuadrícula o lista: la elección se recuerda en este navegador (si no se puede, cuadrícula).
@@ -435,11 +462,16 @@
   // -------------------------------------------------------------------------
   // Comentarios de un reporte (sin correos ni enlaces de chat: la base los rechaza; teléfonos sí)
   // -------------------------------------------------------------------------
-  async function commentsPanel(r) {
+  // opts.inline: dentro de una publicación de Explorar (sin recuadro ni título, ids únicos por reporte).
+  // opts.onCount(n): avisa cuántos comentarios hay después de cargar.
+  async function commentsPanel(r, opts) {
+    const o = opts || {};
+    const sfx = o.inline ? '-' + r.id : '';
     const list = el('div', { class: 'comment-list' });
     const canWrite = r.status === 'active';
     async function load() {
       const rows = await api('/api/reports/' + r.id + '/comments');
+      if (o.onCount) o.onCount(rows.length);
       list.replaceChildren(...rows.map((c) => el('div', { class: 'comment' },
         el('div', { class: 'comment-head' },
           el('strong', { text: c.author }),
@@ -454,10 +486,10 @@
     }
     let form = null;
     if (canWrite) {
-      const text = el('textarea', { id: 'comment-body', rows: 2, maxlength: 500, placeholder: 'Ej.: lo vi ayer cerca del parque, iba con un collar azul' });
+      const text = el('textarea', { id: 'comment-body' + sfx, rows: 2, maxlength: 500, placeholder: 'Ej.: lo vi ayer cerca del parque, iba con un collar azul' });
       const send = el('button', { class: 'btn btn-primary btn-sm', type: 'submit', text: 'Comentar' });
       form = el('form', { class: 'comment-form' },
-        el('label', { for: 'comment-body', class: 'sr-only', text: 'Escribe un comentario' }), text,
+        el('label', { for: 'comment-body' + sfx, class: 'sr-only', text: 'Escribe un comentario' }), text,
         el('p', { class: 'hint', text: 'Los comentarios los ve cualquier persona con cuenta. Si escribes un teléfono, será público. No se permiten correos ni enlaces de chat.' }),
         el('div', { class: 'btn-row', style: 'justify-content:flex-end;' }, send));
       form.addEventListener('submit', async (e) => {
@@ -469,6 +501,7 @@
       });
     }
     try { await load(); } catch (err) { list.append(el('p', { class: 'muted', text: 'No se pudieron cargar los comentarios.' })); }
+    if (o.inline) return el('div', { class: 'comment-inline' }, list, form);
     return el('div', { class: 'panel', id: 'comments-panel' }, el('h3', { text: 'Comentarios' }), list, form);
   }
 

@@ -228,6 +228,10 @@
   - Solución: **borrador automático** en la pestaña (sessionStorage). Al recargar vuelven el texto, la especie, el punto del mapa y, en el reporte rápido, una copia reducida de la foto. En la app aparece "Recuperamos lo que habías escrito" con la opción "Empezar de nuevo". Se borra al publicar.
   - Prueba nueva en el navegador (`test_formularios_no_se_pierden_al_recargar`): **8/8 pruebas del navegador pasan**.
 
+- **Comentar desde Explorar (2026-11-18), pedido por Daniela. ✅ Probado.**
+  - En la vista en lista, cada publicación tiene "Comentar / Comentarios (N)" y "Ver reporte": los comentarios se abren y se escriben ahí mismo, sin entrar al reporte. En la cuadrícula se muestra cuántos comentarios tiene.
+  - `GET /api/reports` ahora trae `comment_count`. Pruebas: API y reporte sin cuenta pasan; 8/8 del navegador (Beto comenta desde Explorar). Captura en celular revisada.
+
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
