@@ -4,15 +4,17 @@ Ejecutar (desde la raíz del proyecto, en PowerShell):
     .\\backend\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --app-dir backend --reload
 Luego abrir http://localhost:8000 (frontend) o http://localhost:8000/docs (API).
 """
+import asyncio
 from contextlib import asynccontextmanager
 from html import escape as html_escape
+import logging
 from xml.sax.saxutils import escape as xml_escape
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import supabase
+from . import ia, motor, supabase
 from .config import ROOT_DIR, get_settings
 from .routers import anuncios, coincidencias, fotos, mascotas, notificaciones, perfil, reportes
 
@@ -21,7 +23,19 @@ from .routers import anuncios, coincidencias, fotos, mascotas, notificaciones, p
 async def lifespan(_app: FastAPI):
     get_settings()  # si faltan claves, falla al arrancar y no a mitad de una petición
     await supabase.start()
+    ia.selected_spec()  # IA_MODEL inválido → falla al arrancar
+    logger = logging.getLogger("petalert")
+    if not logger.handlers:  # uvicorn no muestra los registros INFO de otros módulos
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s: %(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+    logger.info("IA %s", "activa: " + ia.selected_spec().name if ia.enabled() else "apagada")
+    # Fotos que quedaron sin huella (p. ej. el servidor se durmió a mitad de un cálculo).
+    sweep = asyncio.create_task(motor.sweep()) if ia.enabled() else None
     yield
+    if sweep and not sweep.done():
+        sweep.cancel()
     await supabase.stop()
 
 

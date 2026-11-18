@@ -127,6 +127,13 @@ async def upload_photo(path: str, data: bytes) -> None:
         raise HTTPException(status_code=502, detail="No se pudo guardar la foto")
 
 
+async def download_photo(path: str) -> bytes:
+    """Lee una foto del bucket privado (solo backend: lo usa el motor de coincidencias)."""
+    response = await client().get(_object_url(path), headers=_headers(None, admin=True))
+    response.raise_for_status()
+    return response.content
+
+
 async def delete_photos(paths: list[str]) -> None:
     if not paths:
         return

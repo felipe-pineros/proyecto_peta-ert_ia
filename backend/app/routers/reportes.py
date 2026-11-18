@@ -8,9 +8,9 @@ Ubicación (decisión D3): el usuario marca el punto exacto en el mapa.
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
-from .. import supabase
+from .. import motor, supabase
 from ..auth import User, require_user
 from ..schemas import ReportCreate, ReportUpdate
 
@@ -166,10 +166,11 @@ async def update_report(report_id: UUID, body: ReportUpdate, user: User = Depend
 
 
 @router.post("/{report_id}/publish")
-async def publish_report(report_id: UUID, user: User = Depends(require_user)):
+async def publish_report(report_id: UUID, background: BackgroundTasks, user: User = Depends(require_user)):
     """draft → active. La función SQL exige al menos una foto lista."""
     await supabase.rpc("publish_report", {"p_report_id": str(report_id)}, token=user.token)
-    # Etapa 7: aquí se lanzará en segundo plano el cálculo de embeddings y coincidencias.
+    # Etapa 7: huellas y posibles coincidencias se calculan en segundo plano (no hace esperar).
+    background.add_task(motor.run_in_background, str(report_id))
     return await get_report(report_id, user)
 
 

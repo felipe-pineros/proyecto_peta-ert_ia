@@ -7,9 +7,9 @@ El navegador nunca toca Storage directamente (el bucket es privado):
 """
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 
-from .. import supabase
+from .. import motor, supabase
 from ..auth import User, require_user
 from ..images import read_and_normalize_image
 from .reportes import get_own_open_report
@@ -19,8 +19,9 @@ router = APIRouter(prefix="/api", tags=["fotos"])
 
 
 @router.post("/reports/{report_id}/photos", status_code=status.HTTP_201_CREATED)
-async def upload_photo(report_id: UUID, file: UploadFile = File(...), user: User = Depends(require_user)):
-    await get_own_open_report(report_id, user)
+async def upload_photo(report_id: UUID, background: BackgroundTasks, file: UploadFile = File(...),
+                       user: User = Depends(require_user)):
+    report = await get_own_open_report(report_id, user)
     image = await read_and_normalize_image(file)  # valida antes de reservar espacio
 
     photo_id = str(uuid4())
@@ -42,7 +43,9 @@ async def upload_photo(report_id: UUID, file: UploadFile = File(...), user: User
                       return_rows=False, json={
                           "status": "ready", "width": image.width, "height": image.height,
                           "byte_size": len(image.data)})
-    # Etapa 7: si el reporte ya está activo, aquí se recalcularán sus coincidencias.
+    # Etapa 7: si el reporte ya está publicado, la foto nueva entra al motor en segundo plano.
+    if report["status"] == "active":
+        background.add_task(motor.run_in_background, str(report_id))
     return {"id": photo_id, "report_id": str(report_id), "status": "ready",
             "width": image.width, "height": image.height}
 
