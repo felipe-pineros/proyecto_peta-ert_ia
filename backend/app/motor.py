@@ -65,7 +65,11 @@ async def embed_missing(report_id: str) -> int:
     for photo in photos:
         if photo["id"] in done_ids:
             continue
-        data = await supabase.download_photo(photo["storage_path"])
+        try:
+            data = await supabase.download_photo(photo["storage_path"])
+        except Exception as exc:  # la borraron mientras tanto: se salta y se sigue con las demás
+            log.info("Foto %s no disponible, se omite: %s", photo["id"], type(exc).__name__)
+            continue
         vector = await asyncio.to_thread(embedder.embed_bytes, data)
         try:
             await supabase.db("POST", "photo_embeddings", admin=True, return_rows=False, json={
