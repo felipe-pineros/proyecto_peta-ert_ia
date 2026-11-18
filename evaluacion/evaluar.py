@@ -136,6 +136,13 @@ def load_model(key: str):
     if spec["timm"].startswith("vit_") and "dinov2" in spec["timm"]:
         kwargs["img_size"] = 224  # DINOv2 trabaja a 518 px por defecto; 224 es ~5 veces más rápido en CPU
     model = timm.create_model(spec["timm"], **kwargs).eval()
+    if "MegaDescriptor" in spec["timm"]:
+        # La ficha del modelo (BVRA) indica: foto completa a 224x224 (sin recorte central) y
+        # normalización 0.5. La configuración genérica de timm (ImageNet + recorte) no es la suya.
+        from torchvision import transforms as T
+        transform = T.Compose([T.Resize((224, 224)), T.ToTensor(), T.Normalize([0.5] * 3, [0.5] * 3)])
+        torch.set_num_threads(max(1, os.cpu_count() or 1))
+        return model, transform
     config = timm.data.resolve_data_config(model=model)
     if "img_size" in kwargs:  # la preparación de la imagen debe usar el mismo tamaño que el modelo
         config["input_size"] = (3, kwargs["img_size"], kwargs["img_size"])
