@@ -2,10 +2,10 @@
 from collections import defaultdict, deque
 import time
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
-from .. import anuncios
+from .. import anuncios, geocodificar
 from ..images import read_and_normalize_image
 from ..auth import User, require_user
 
@@ -37,6 +37,26 @@ async def extract_ad(body: AdText, user: User = Depends(require_user)):
     _check_rate(user.id)
     data, removed = await anuncios.extract(text=body.text)
     return data.model_dump(mode="json") | {"contact_data_removed": removed}
+
+
+_geo_recent: dict[str, deque] = defaultdict(deque)
+GEO_PER_HOUR = 30
+
+
+@router.get("/geocode")
+async def geocode_place(q: str = Query(min_length=3, max_length=160), user: User = Depends(require_user)):
+    """Ubica en el mapa el lugar que dice un anuncio (OpenStreetMap). 404 si no se encuentra."""
+    now = time.monotonic()
+    calls = _geo_recent[user.id]
+    while calls and now - calls[0] > 3600:
+        calls.popleft()
+    if len(calls) >= GEO_PER_HOUR:
+        raise HTTPException(status_code=429, detail="Demasiadas búsquedas de lugares. Marca el punto en el mapa.")
+    calls.append(now)
+    place = await geocodificar.geocode(q)
+    if not place:
+        raise HTTPException(status_code=404, detail="No encontramos ese lugar en el mapa")
+    return place
 
 
 @router.post("/extract-image")

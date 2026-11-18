@@ -237,6 +237,13 @@
   - Pruebas: 12/12 de anuncios (Gemini simulado: imagen reducida, sin EXIF/GPS, respuesta limpia de teléfonos y correos, cupo compartido) y 8/8 del navegador (cancelar el aviso no envía nada).
   - **Prueba real con Google** con una captura inventada (sin datos reales): respondió en 6,8 s con perro, criolla, café con blanco, pequeña, collar rojo, Chapinero y la fecha; no devolvió el nombre ni el teléfono que se veían en la imagen.
 
+- **El lugar del anuncio se ubica solo en el mapa (2026-11-18), pedido por Daniela. ✅ Probado.**
+  - Si Gemini lee un lugar, el servidor lo busca en OpenStreetMap (Nominatim, gratis) y pone el marcador; la persona lo revisa y lo arrastra. Si el anuncio no dice el lugar, se le pide marcarlo (barrio o parque).
+  - `app/geocodificar.py` + `GET /api/ads/geocode`: solo se envía el nombre del lugar; búsqueda en Colombia; 1 consulta por segundo, caché y 30 búsquedas por hora por persona (política de uso de OpenStreetMap).
+  - Entiende direcciones colombianas: "calle 72 con carrera 11" → "calle 72 #11"; quita "barrio", "cerca de"…; si no encuentra el lugar exacto usa el barrio o la ciudad y lo marca como **aproximado**.
+  - Límite real: OpenStreetMap ubica calles, no cruces exactos (en la prueba quedó en la Calle 72 a ~600 m de la carrera 11). Por eso se pide revisar el marcador.
+  - Pruebas: 15/15 de anuncios (OpenStreetMap simulado) y 8/8 del navegador. Prueba real completa en celular con Gemini y OpenStreetMap: captura inventada → marcador en la Calle 72, Chapinero; no se mostró el nombre ni el teléfono de la captura.
+
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.

@@ -116,7 +116,8 @@ INSTRUCTIONS = (
     "Devuelve solo lo que el anuncio dice o muestra; si algo no aparece, usa null. No inventes. "
     "En una imagen puedes describir el color y el tamaño del animal que se ve en la foto. "
     "NUNCA incluyas nombres de personas, teléfonos, correos, direcciones exactas de viviendas ni "
-    "usuarios de redes. Escribe color, señas y lugar (barrio, parque o calle) en español, breves. "
+    "usuarios de redes. Escribe color y señas en español, breves. En el lugar pon la calle, el barrio "
+    "o el parque y, si el anuncio la dice, la ciudad (p. ej. 'calle 72 con carrera 11, Bogotá'). "
     "Hoy es {today}."
 )
 

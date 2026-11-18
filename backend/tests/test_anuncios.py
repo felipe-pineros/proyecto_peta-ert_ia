@@ -216,3 +216,59 @@ def test_ruta_captura_valida_imagen_y_comparte_limite(api, monkeypatch):
     # Texto y capturas comparten el mismo cupo de 10 por hora.
     assert api.post("/api/ads/extract", json={"text": "Se encontró un gato gris en Suba"}).status_code == 200
     assert api.post("/api/ads/extract-image", files=foto).status_code == 429
+
+
+# ---------------------------------------------------------------------------
+# Ubicar en el mapa el lugar del anuncio (OpenStreetMap simulado)
+# ---------------------------------------------------------------------------
+from app import geocodificar  # noqa: E402
+
+
+def test_candidatos_entienden_direcciones_colombianas():
+    assert geocodificar.candidates("calle 72 con carrera 11, Bogotá") == ["calle 72 #11, Bogotá", "Bogotá"]
+    assert geocodificar.candidates("Cl 45 x Cra 13") == ["Cl 45 #13"]
+    assert geocodificar.candidates("barrio Kennedy, Bogotá")[0] == "Kennedy, Bogotá"
+    assert geocodificar.candidates("cerca del Parque de Usaquén") == ["Parque de Usaquén"]
+    assert geocodificar.candidates("Parque X, Chapinero, Bogotá") == ["Parque X, Chapinero, Bogotá", "Chapinero, Bogotá", "Bogotá"]
+
+
+def fake_nominatim(monkeypatch, known: dict):
+    seen = []
+
+    def handler(request: httpx.Request):
+        seen.append(request)
+        q = request.url.params["q"]
+        rows = [{"lat": str(known[q][0]), "lon": str(known[q][1]), "display_name": f"{q}, Localidad X, Bogotá, Colombia"}] if q in known else []
+        return httpx.Response(200, json=rows)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(supabase, "client", lambda: client)
+    monkeypatch.setattr(geocodificar, "_last_call", 0.0)
+    geocodificar._cache.clear()
+    return seen
+
+
+def test_geocode_exacto_aproximado_y_cache(monkeypatch):
+    seen = fake_nominatim(monkeypatch, {"calle 72 #11, Bogotá": (4.6518, -74.051), "Chapinero, Bogotá": (4.6366, -74.065)})
+    exact = asyncio.run(geocodificar.geocode("calle 72 con carrera 11, Bogotá"))
+    assert exact["lat"] == 4.6518 and exact["approximate"] is False
+    req = seen[0]
+    assert req.url.params["countrycodes"] == "co" and req.headers["user-agent"].startswith("PetAlert-IA/1.0")
+    # Solo se envía el nombre del lugar.
+    assert set(req.url.params) == {"q", "format", "limit", "countrycodes", "accept-language"}
+    # Lugar desconocido → se usa el barrio, marcado como aproximado.
+    approx = asyncio.run(geocodificar.geocode("Parque Inventado, Chapinero, Bogotá"))
+    assert approx["lng"] == -74.065 and approx["approximate"] is True
+    # Repetir no vuelve a consultar OpenStreetMap (caché).
+    before = len(seen)
+    asyncio.run(geocodificar.geocode("calle 72 con carrera 11, Bogotá"))
+    assert len(seen) == before
+    assert asyncio.run(geocodificar.geocode("zzzz lugar que no existe")) is None
+
+
+def test_ruta_geocode(api, monkeypatch):
+    fake_nominatim(monkeypatch, {"Parque de Usaquén": (4.6948, -74.0307)})
+    ok_ = api.get("/api/ads/geocode", params={"q": "cerca del Parque de Usaquén"})
+    assert ok_.status_code == 200 and ok_.json()["lat"] == 4.6948
+    assert api.get("/api/ads/geocode", params={"q": "zzzz no existe"}).status_code == 404
+    assert api.get("/api/ads/geocode", params={"q": "ab"}).status_code == 422

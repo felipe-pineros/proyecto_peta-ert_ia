@@ -241,6 +241,37 @@
     adResult.replaceChildren();
   }
 
+  // Busca en OpenStreetMap el lugar que dice el anuncio y pone el marcador (decisión de Daniela).
+  // Si la persona ya había marcado un punto, no se lo cambia sin preguntar: ofrece un botón.
+  async function placeFromAd(label, status, add) {
+    let place;
+    try {
+      place = await api('/api/ads/geocode?q=' + encodeURIComponent(label));
+    } catch (err) {
+      status.textContent = 'No encontramos «' + label + '» en el mapa. Márcalo tú (el texto del lugar se guarda como referencia).';
+      status.className = 'warn';
+      return;
+    }
+    const map = initMap();
+    if (!map) return;
+    const where = place.approximate ? 'cerca de «' + place.label + '» (aproximado)' : 'en «' + place.label + '»';
+    const go = () => {
+      map.set(place.lat, place.lng, true);
+      status.textContent = 'Pusimos el marcador ' + where + '. Revísalo y arrástralo si la viste en otro punto.';
+      if (place.approximate) status.className = 'warn';
+      mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    if (!point) {
+      go();
+    } else {
+      status.textContent = 'Encontramos el lugar del anuncio ' + where + '.';
+      const move = add('button', 'Mover el marcador ahí', 'link');
+      move.type = 'button';
+      move.addEventListener('click', () => { move.remove(); go(); });
+      status.after(move);
+    }
+  }
+
   function showAd(d) {
     adResult.replaceChildren();
     const add = (tag, text, cls) => {
@@ -267,7 +298,11 @@
     }
     if (d.species === 'other') adResult.append(add('p', 'Por ahora solo se pueden reportar perros y gatos.', 'warn'));
     if (d.location_label) {
-      adResult.append(add('p', 'Marca en el mapa el lugar donde la viste (el texto del lugar se guardará como referencia).'));
+      const status = add('p', 'Buscando «' + d.location_label + '» en el mapa…', 'qr-ad-place');
+      adResult.append(status);
+      placeFromAd(d.location_label, status, add);
+    } else {
+      adResult.append(add('p', 'El anuncio no dice dónde fue: marca en el mapa el lugar aproximado (barrio o parque).', 'warn'));
     }
     if (d.contact_data_removed) {
       adResult.append(add('p', 'Quitamos ' + d.contact_data_removed + ' dato(s) de contacto antes de enviarlo a la IA.'));

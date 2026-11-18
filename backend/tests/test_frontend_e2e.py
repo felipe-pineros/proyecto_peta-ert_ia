@@ -295,6 +295,14 @@ def test_reporte_rapido_sin_cuenta(server, browser, photo_file):
     page.route("**/api/config", config_with_ai)
     page.route("**/api/ads/extract", fake_extract)
     page.route("**/api/ads/extract-image", fake_extract_image)
+    geocoded = []
+
+    def fake_geocode(route):  # OpenStreetMap simulado
+        geocoded.append(route.request.url)
+        route.fulfill(json={"lat": 4.6948, "lng": -74.0307, "label": "Parque de Usaquén, Usaquén, Bogotá",
+                            "approximate": False})
+
+    page.route("**/api/ads/geocode*", fake_geocode)
     try:
         page.goto(BASE + "/#encontre")
         page.wait_for_selector("#qr-map.leaflet-container")
@@ -317,6 +325,10 @@ def test_reporte_rapido_sin_cuenta(server, browser, photo_file):
         page.wait_for_selector("#qr-ad-result:not([hidden]) >> text=gris atigrado")
         assert page.is_checked("input[name='qr-species'][value='cat']")  # la IA eligió "Gato"
         assert sent_ads and "Usaquén" in sent_ads[0]["text"]
+        # El lugar del anuncio se ubica solo en el mapa (la persona lo revisa).
+        page.wait_for_selector("#qr-ad-result >> text=Pusimos el marcador")
+        assert page.query_selector("#qr-map .leaflet-marker-icon") is not None
+        assert len(geocoded) == 1 and "Usaqu" in geocoded[0]
         page.set_input_files("#qr-photo", str(photo_file))
         page.wait_for_selector("#qr-photo-box img.preview")
         page.click("#qr-map", position={"x": 260, "y": 120})
