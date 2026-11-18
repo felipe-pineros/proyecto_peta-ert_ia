@@ -89,11 +89,18 @@ async def db(
     params: dict[str, str] | None = None,
     json: Any = None,
     return_rows: bool = True,
+    ignore_duplicates: bool = False,
 ) -> Any:
-    """Llama a la API REST (PostgREST) de Supabase y devuelve el JSON (o None)."""
+    """Llama a la API REST (PostgREST) de Supabase y devuelve el JSON (o None).
+
+    ignore_duplicates=True (con params={"on_conflict": "..."}): un INSERT que choca con una
+    restricción UNIQUE no falla ni modifica la fila existente; simplemente no hace nada.
+    """
     headers = _headers(token, admin)
     if method in ("POST", "PATCH", "DELETE"):
         headers["Prefer"] = "return=representation" if return_rows else "return=minimal"
+        if ignore_duplicates:
+            headers["Prefer"] += ",resolution=ignore-duplicates"
     try:
         response = await client().request(
             method, f"{get_settings().supabase_url}/rest/v1/{path}",

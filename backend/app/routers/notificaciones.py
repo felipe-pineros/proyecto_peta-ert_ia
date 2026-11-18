@@ -23,7 +23,22 @@ async def list_notifications(
               "order": "created_at.desc", "limit": str(limit)}
     if unread_only:
         params["read_at"] = "is.null"
-    return await supabase.db("GET", "notifications", token=user.token, params=params)
+    rows = await supabase.db("GET", "notifications", token=user.token, params=params)
+    # Para escribir un aviso claro: ¿soy quien perdió o quien encontró?, y de qué especie es.
+    match_ids = {n["match_id"] for n in rows}
+    matches = await supabase.db("GET", "matches", token=user.token, params={
+        "select": "id,lost_report_id", "id": f"in.({','.join(match_ids)})"}) if match_ids else []
+    lost_ids = {m["lost_report_id"] for m in matches}
+    lost = await supabase.db("GET", "reports", admin=True, params={
+        "select": "id,user_id,species", "id": f"in.({','.join(lost_ids)})"}) if lost_ids else []
+    lost_by_id = {r["id"]: r for r in lost}
+    info = {m["id"]: lost_by_id.get(m["lost_report_id"]) for m in matches}
+    for n in rows:
+        report = info.get(n["match_id"])
+        n["my_role"] = None if not report else (
+            "lost_owner" if report["user_id"] == user.id else "found_owner")
+        n["species"] = report["species"] if report else None
+    return rows
 
 
 @router.post("/{notification_id}/read", status_code=status.HTTP_204_NO_CONTENT)

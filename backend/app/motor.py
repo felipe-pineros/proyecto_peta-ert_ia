@@ -106,8 +106,38 @@ async def process_report(report_id: str) -> list[dict]:
                 saved.append(row | {"lost_report_id": c["lost_report_id"],
                                     "found_report_id": c["found_report_id"],
                                     "visual_score": visual, "total_score": total})
-                # Etapa 8: si row["is_new"], aquí se crearán los avisos de nueva coincidencia.
+                # Etapa 8: aviso para las dos personas. Se intenta con toda sugerencia vigente
+                # (no solo las nuevas) para reponer avisos que hayan faltado; la base impide duplicados.
+                if row["status"] == "suggested":
+                    try:
+                        await notify_new_match(row["match_id"], c["lost_report_id"], c["found_report_id"])
+                    except Exception:
+                        log.exception("No se pudo crear el aviso de la coincidencia %s", row["match_id"])
         return saved
+
+
+async def notify_new_match(match_id: str, lost_report_id: str, found_report_id: str) -> None:
+    """Crea el aviso 'new_match' para el dueño de cada reporte. Nunca duplica (UNIQUE en la tabla)."""
+    owners = await supabase.db("GET", "reports", admin=True, params={
+        "select": "user_id", "id": f"in.({lost_report_id},{found_report_id})"})
+    rows = [{"user_id": user_id, "match_id": match_id, "kind": "new_match"}
+            for user_id in {o["user_id"] for o in owners}]
+    if rows:
+        await supabase.db("POST", "notifications", admin=True, return_rows=False,
+                          ignore_duplicates=True, params={"on_conflict": "user_id,match_id,kind"},
+                          json=rows)
+
+
+async def notify_pending() -> int:
+    """Repone los avisos de coincidencias sugeridas que se guardaron antes de la etapa 8."""
+    matches = await supabase.db("GET", "matches", admin=True, params={
+        "select": "id,lost_report_id,found_report_id", "status": "eq.suggested", "limit": "1000"})
+    for m in matches:
+        try:
+            await notify_new_match(m["id"], m["lost_report_id"], m["found_report_id"])
+        except Exception:
+            log.exception("No se pudo reponer el aviso de la coincidencia %s", m["id"])
+    return len(matches)
 
 
 async def run_in_background(report_id: str) -> None:
@@ -124,6 +154,10 @@ async def sweep() -> int:
     """Al encender: procesa reportes activos con fotos sin huella (p. ej. tras un reinicio)."""
     if not ia.enabled():
         return 0
+    try:
+        await notify_pending()
+    except Exception:
+        log.exception("No se pudieron reponer los avisos pendientes")
     spec = ia.selected_spec()
     active = await supabase.db("GET", "reports", admin=True, params={
         "select": "id", "status": "eq.active", "limit": "1000"})

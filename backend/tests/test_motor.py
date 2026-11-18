@@ -184,6 +184,26 @@ def test_recalcular_no_duplica_y_respeta_descartadas(api, admin, users, lost_dog
     assert after[0]["visual_score"] == again[0]["visual_score"]
 
 
+def test_avisa_a_las_dos_personas_sin_duplicar(api, admin, users, lost_dog):
+    found = published(api, users["beto"], "found", PHOTO_DOG_OTHER_SHOT)
+    [m] = matches_between(admin, lost_dog["id"], found["id"])
+
+    def avisos(user):
+        rows = ok(api.get("/api/notifications", headers=user["h"]))
+        return [n for n in rows if n["match_id"] == m["id"] and n["kind"] == "new_match"]
+
+    [ana], [beto] = avisos(users["ana"]), avisos(users["beto"])
+    assert ana["my_role"] == "lost_owner" and beto["my_role"] == "found_owner"
+    assert ana["species"] == "dog" and ana["read_at"] is None
+    # Recalcular (foto nueva) no crea un segundo aviso ni "des-lee" el que ya se leyó.
+    ok(api.post(f"/api/notifications/{ana['id']}/read", headers=users["ana"]["h"]), 204)
+    ok(api.post(f"/api/reports/{found['id']}/photos", headers=users["beto"]["h"],
+                files={"file": ("otra.png", PHOTO_DOG, "image/png")}), 201)
+    [again] = avisos(users["ana"])
+    assert again["id"] == ana["id"] and again["read_at"] is not None
+    assert len(avisos(users["beto"])) == 1
+
+
 def test_otro_animal_no_se_sugiere(api, admin, users, lost_dog):
     found = published(api, users["beto"], "found", PHOTO_OTHER_ANIMAL)
     assert matches_between(admin, lost_dog["id"], found["id"]) == []
