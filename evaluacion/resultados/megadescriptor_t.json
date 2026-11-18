@@ -1,0 +1,50 @@
+{
+  "ranking": {
+    "consultas": 37,
+    "mAP": 0.32851465351465353,
+    "recall@1": 0.16216216216216217,
+    "recall@5": 0.6486486486486487,
+    "recall@10": 0.8918918918918919
+  },
+  "pares": {
+    "mismo_animal": 39,
+    "distinto_animal": 327,
+    "auc": 0.56080922135968,
+    "fpr_1%": {
+      "umbral": 0.7640138309537616,
+      "tpr": 0.0,
+      "fpr": 0.009174311926605505,
+      "precision": 0.0
+    },
+    "fpr_5%": {
+      "umbral": 0.6496292689116553,
+      "tpr": 0.05128205128205128,
+      "fpr": 0.04892966360856269,
+      "precision": 0.1111111111111111
+    }
+  },
+  "modelo": "megadescriptor_t",
+  "timm": "hf-hub:BVRA/MegaDescriptor-T-224",
+  "licencia": "CC-BY-NC-4.0",
+  "recorte": false,
+  "recorte_detecciones": null,
+  "datos": {
+    "fotos": 37,
+    "animales": 12,
+    "perros": 8,
+    "gatos": 4
+  },
+  "rendimiento": {
+    "carga_s": 7.6,
+    "ms_por_foto_mediana": 182.4,
+    "dimension_embedding": 768,
+    "memoria_pico_mb": 715.0
+  },
+  "equipo": {
+    "cpu": "AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD",
+    "nucleos": 4,
+    "python": "3.14.4",
+    "torch": "2.15.0+cpu"
+  },
+  "fecha": "2026-11-18T03:14:41+00:00"
+}

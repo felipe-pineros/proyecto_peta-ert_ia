@@ -1,0 +1,50 @@
+{
+  "ranking": {
+    "consultas": 37,
+    "mAP": 0.85752587002587,
+    "recall@1": 0.8378378378378378,
+    "recall@5": 1.0,
+    "recall@10": 1.0
+  },
+  "pares": {
+    "mismo_animal": 39,
+    "distinto_animal": 327,
+    "auc": 0.9396220497137928,
+    "fpr_1%": {
+      "umbral": 0.6260249937916766,
+      "tpr": 0.2564102564102564,
+      "fpr": 0.009174311926605505,
+      "precision": 0.7692307692307693
+    },
+    "fpr_5%": {
+      "umbral": 0.4843257432140128,
+      "tpr": 0.7948717948717948,
+      "fpr": 0.04892966360856269,
+      "precision": 0.6595744680851063
+    }
+  },
+  "modelo": "dinov2_s",
+  "timm": "vit_small_patch14_dinov2.lvd142m",
+  "licencia": "Apache-2.0",
+  "recorte": true,
+  "recorte_detecciones": "37/37",
+  "datos": {
+    "fotos": 37,
+    "animales": 12,
+    "perros": 8,
+    "gatos": 4
+  },
+  "rendimiento": {
+    "carga_s": 5.4,
+    "ms_por_foto_mediana": 660.3,
+    "dimension_embedding": 384,
+    "memoria_pico_mb": 953.9
+  },
+  "equipo": {
+    "cpu": "AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD",
+    "nucleos": 4,
+    "python": "3.14.4",
+    "torch": "2.15.0+cpu"
+  },
+  "fecha": "2026-11-18T03:11:35+00:00"
+}

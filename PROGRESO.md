@@ -10,7 +10,7 @@
 | 3 | Supabase y seguridad | ✅ Completada (2026-11-10) |
 | 4 | Backend CRUD | ✅ Completada (2026-11-10) |
 | 5 | Integración frontend | ✅ Completada (2026-11-10) |
-| 6 | Evaluación del modelo IA | 🔄 En curso: herramientas listas, faltan las fotos |
+| 6 | Evaluación del modelo IA | 🔄 Primera medición con fotos reales (2026-11-17): gana DINOv2-S; falta ampliar la muestra |
 | 7 | Motor de coincidencias | ⏳ Pendiente |
 | 8 | Notificaciones | ⏳ Pendiente |
 | 9 | Docker y documentación | 🔄 Docker listo y probado (2026-11-17), falta tu confirmación |
@@ -132,8 +132,35 @@
   - Sin despliegue automático: tras cada `git push` hay que presionar **Manual Deploy** en Render.
   - Lo hace Daniela: Site URL y Redirect URLs de Supabase con la URL de Render; para la demo, desactivar "Confirm email"; opcional, `PUBLIC_SITE_URL` en Render.
 
+- **Verificado en la URL publicada (2026-11-17):**
+  - con `PUBLIC_SITE_URL` puesta, `canonical` y `og:image` usan la URL de Render;
+  - "Confirm email" está desactivado;
+  - un registro real entra sin confirmar el correo y `/api/me` responde 200 desde Render. El usuario de prueba se borró.
+- **Etapa 6: primera medición con fotos reales (2026-11-17).**
+  - Muestra: 37 fotos de 12 animales (8 perros con 25 fotos, 4 gatos con 12 fotos), puestas por Daniela.
+  - Tabla completa en `evaluacion/resultados.md`.
+
+  | Modelo | Recall@1 | Recall@5 | AUC | Detecta con 5 % FP | ms/foto | Memoria |
+  |---|---|---|---|---|---|---|
+  | **DINOv2-S** | **86,5 %** | 100 % | **94,8 %** | 79,5 % | **136** | **549 MB** |
+  | DINOv2-S + recorte | 83,8 % | 100 % | 94,0 % | 79,5 % | 660 | 954 MB |
+  | MegaDescriptor-T | 16,2 % | 64,9 % | 56,1 % | 5,1 % | 182 | 715 MB |
+  | MegaDescriptor-T + recorte | 18,9 % | 59,5 % | 55,6 % | 2,6 % | 652 | 981 MB |
+
+  - **Ganador provisional: DINOv2-S, sin recorte.** Es más preciso, 5 veces más rápido que con recorte, usa menos memoria y tiene licencia Apache-2.0, que permite uso comercial. El recorte no mejoró los resultados con estas fotos.
+  - MegaDescriptor-T salió casi al azar (AUC 56 %), y se descartaron fallas nuestras:
+    - se corrigió su preparación de imagen según su ficha (224×224 sin recorte, normalización 0,5) y el resultado no cambió;
+    - se comprobó que carga sus pesos entrenados.
+    - Además, su licencia es no comercial. Queda descartado.
+  - **Límites de esta medición (no exagerar):**
+    - 12 animales es poco: cada acierto o error mueve Recall@1 unos 3 puntos;
+    - con solo 4 gatos, Recall@5 = 100 % es fácil (hay solo 3 gatos más con quienes confundirlo);
+    - no se ha comprobado si hay fotos casi iguales tomadas en ráfaga, lo que inflaría los números;
+    - el umbral de notificación aún no está calibrado (con 1 % de falsos positivos solo detecta el 31 %).
+  - Memoria: con PyTorch, DINOv2-S llega a 549 MB, más que los 512 MB de Render Free. Para el motor (etapa 7) se propone exportarlo a ONNX Runtime.
+
 ## Pendiente
-- **Etapa 6:** faltan las fotos reales en `datos_evaluacion/` para medir los modelos y elegir uno (ver `evaluacion/README.md`).
+- **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
 - El registro real envía un correo de confirmación; el correo gratuito de Supabase permite muy pocos por hora (para la demo puede convenir configurar SMTP propio o desactivar la confirmación en Auth).
 - Las coincidencias aún no se crean solas: el motor es de la etapa 7. Hoy solo existen si se insertan a mano (así lo hacen las pruebas).
