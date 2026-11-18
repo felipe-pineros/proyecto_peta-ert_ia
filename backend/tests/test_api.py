@@ -128,7 +128,8 @@ def active_report(api, user, type_, **extra) -> dict:
 
 
 def insert_match(admin, lost_id, found_id) -> str:
-    r = admin.post(f"{URL}/rest/v1/matches", headers=admin_headers() | {"Prefer": "return=representation"},
+    r = admin.post(f"{URL}/rest/v1/matches?on_conflict=lost_report_id,found_report_id",
+                   headers=admin_headers() | {"Prefer": "return=representation,resolution=merge-duplicates"},
                    json={"lost_report_id": lost_id, "found_report_id": found_id, "model_name": "prueba",
                          "visual_score": 0.9, "distance_km": 1.2, "total_score": 0.85})
     assert r.is_success, r.text

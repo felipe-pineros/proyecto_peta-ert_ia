@@ -357,7 +357,8 @@ def test_confirmar_coincidencia_y_aviso(server, browser, users, state):
                         files={"file": ("f.png", buf.getvalue(), "image/png")}).status_code == 201
         assert api.post(f"/api/reports/{found['id']}/publish", headers=h).status_code == 200
     # El motor es de la etapa 7: la coincidencia se inserta a mano.
-    r = httpx.post(f"{URL}/rest/v1/matches", headers=admin_headers() | {"Prefer": "return=representation"},
+    r = httpx.post(f"{URL}/rest/v1/matches?on_conflict=lost_report_id,found_report_id",
+                   headers=admin_headers() | {"Prefer": "return=representation,resolution=merge-duplicates"},
                    json={"lost_report_id": state["ana_report"], "found_report_id": found["id"],
                          "model_name": "prueba", "visual_score": 0.91, "distance_km": 0.8, "total_score": 0.88})
     assert r.is_success, r.text
