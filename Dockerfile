@@ -18,14 +18,20 @@ WORKDIR /srv
 COPY backend/requirements.txt backend/requirements.txt
 RUN pip install -r backend/requirements.txt
 
-# 2) Solo lo que el servidor entrega o ejecuta (misma estructura que en el repositorio)
+# 2) Modelo de IA (DINOv2-S en ONNX, 84 MB): se descarga de Hugging Face con versión fija y se
+#    comprueba su huella SHA-256. Va antes del resto del código para no bajarlo en cada cambio.
+COPY backend/app/__init__.py backend/app/config.py backend/app/
+COPY backend/app/ia backend/app/ia
+RUN cd backend && python -m app.ia.descargar
+
+# 3) Solo lo que el servidor entrega o ejecuta (misma estructura que en el repositorio)
 COPY backend/app backend/app
 COPY index.html app.html ./
 COPY css css
 COPY js js
 COPY img img
 
-# 3) No ejecutar como administrador (root) dentro del contenedor
+# 4) No ejecutar como administrador (root) dentro del contenedor
 RUN useradd --create-home --uid 10001 petalert
 USER petalert
 
