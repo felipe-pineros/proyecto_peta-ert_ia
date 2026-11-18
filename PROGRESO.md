@@ -259,7 +259,7 @@
 - D3: la ubicación se marca en un mapa (Leaflet + OpenStreetMap).
 - D4: máximo 5 fotos por reporte.
 - D5: reporte rápido de mascota encontrada sin cuenta (usuario anónimo de Supabase). Los invitados no ven reportes ajenos.
-- D6: leer el texto de anuncios de redes con Gemini (opcional, plan gratuito, solo texto y sin datos de contacto).
+- D6: leer el texto de anuncios de redes con Gemini (opcional, plan gratuito, solo texto y sin datos de contacto). Reconfirmado el 2026-11-18: no se envían fotos/capturas, porque los datos de contacto de una imagen no se pueden borrar antes de enviarla a Google.
 
 ## Cómo verificar
 - Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 46 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.
