@@ -119,6 +119,19 @@
   - Solución: el servidor ahora también entrega `/index.html`.
   - Hay una prueba nueva en `test_api.py`. Las 12 pruebas de la API pasan, y el contenedor responde 200 en esa dirección.
 
+- **Publicado en Render (2026-11-17), autorizado por Daniela: https://proyecto-pet-alert.onrender.com**
+  - Plan Free, región Virginia. Usa el `Dockerfile` desde el repositorio público, con la opción "Public Git Repository".
+  - Las claves están solo en Environment Variables de Render.
+  - Comprobado:
+    - todas las páginas responden 200;
+    - `/.env` da 404;
+    - `/api/config` trae Supabase y Gemini;
+    - `robots.txt` usa `https`;
+    - **las 7 pruebas del navegador pasan contra la URL publicada**.
+  - Límites del plan gratis: se duerme tras 15 minutos sin visitas (la primera carga tarda entre 30 y 60 segundos), 512 MB de memoria y 750 horas al mes.
+  - Sin despliegue automático: tras cada `git push` hay que presionar **Manual Deploy** en Render.
+  - Lo hace Daniela: Site URL y Redirect URLs de Supabase con la URL de Render; para la demo, desactivar "Confirm email"; opcional, `PUBLIC_SITE_URL` en Render.
+
 ## Pendiente
 - **Etapa 6:** faltan las fotos reales en `datos_evaluacion/` para medir los modelos y elegir uno (ver `evaluacion/README.md`).
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
