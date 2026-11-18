@@ -4,10 +4,12 @@ Validar aquí da mensajes claros (422) antes de llegar a Supabase; la base de da
 vuelve a comprobarlo todo, así que esto no es la única barrera.
 """
 from datetime import datetime, timedelta, timezone
+import re
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from pydantic import (AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, field_validator,
+                      model_validator)
 
 
 def _txt(max_len: int, min_len: int = 1):
@@ -18,8 +20,27 @@ Size = Literal["small", "medium", "large"]
 SpeciesCode = Annotated[str, StringConstraints(pattern=r"^[a-z_]{2,30}$")]
 Email = Annotated[str, StringConstraints(strip_whitespace=True, max_length=254,
                                          pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
+def normalize_phone(value: str) -> str:
+    """Teléfono colombiano → "+57 300 123 4567"; de otro país solo si empieza con "+".
+
+    Sin esto, un número con un dígito de más o de menos se guardaba tal cual y el botón de
+    WhatsApp lo enviaba a otro país (p. ej. "+35…" en vez de "+57…").
+    """
+    digits = re.sub(r"\D", "", value)
+    if value.startswith("+") and not digits.startswith("57"):
+        if 8 <= len(digits) <= 15:
+            return "+" + digits
+        raise ValueError("El teléfono internacional no es válido")
+    if len(digits) == 12 and digits.startswith("57"):
+        digits = digits[2:]
+    if len(digits) == 10 and digits[0] in "36":  # celular (3xx) o fijo (60x)
+        return f"+57 {digits[:3]} {digits[3:6]} {digits[6:]}"
+    raise ValueError("Escribe un celular de 10 dígitos, por ejemplo 300 123 4567")
+
+
 Phone = Annotated[str, StringConstraints(strip_whitespace=True, min_length=5, max_length=40,
-                                         pattern=r"^[0-9+()\-\s]+$")]
+                                         pattern=r"^[0-9+()\-\s]+$"),
+                  AfterValidator(normalize_phone)]
 Lat = Annotated[float, Field(ge=-90, le=90)]
 Lng = Annotated[float, Field(ge=-180, le=180)]
 

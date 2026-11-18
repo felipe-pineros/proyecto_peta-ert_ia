@@ -204,6 +204,11 @@ def test_reporte_rapido_valida_en_el_navegador(server, browser):
         assert page.is_visible(error), error
     page.fill("#qr-email", "no-es-correo")
     assert "correo válido" in page.inner_text("#err-qr-email")
+    # Un celular con un dígito de menos se rechaza (antes se guardaba y WhatsApp lo mandaba a "+35…").
+    page.fill("#qr-phone", "300 123 456")
+    assert "10 dígitos" in page.inner_text("#err-qr-phone")
+    page.fill("#qr-phone", "300 123 4567")
+    assert page.is_hidden("#err-qr-phone")
     # Sin GEMINI_API_KEY en el servidor, la opción de leer anuncios no aparece.
     if not page.evaluate("() => fetch('/api/config').then(r => r.json()).then(c => c.features.read_ad)"):
         assert page.is_hidden("#qr-ad")

@@ -16,7 +16,7 @@
   const validators = {
     nombre: (v) => (v.trim().length >= 2 && v.trim().length <= 80) ? '' : 'Ingresa tu nombre completo.',
     email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Ingresa un correo válido.',
-    telefono: (v) => (v.trim() === '' || /^[0-9\s+()-]{7,40}$/.test(v.trim())) ? '' : 'Ingresa un teléfono válido.',
+    telefono: (v) => window.PetAlert.phoneProblem(v),
     password: (v) => v.length >= 8 ? '' : 'La contraseña debe tener al menos 8 caracteres.',
   };
 

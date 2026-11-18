@@ -159,7 +159,7 @@
     const p = phone.value.trim();
     const e = email.value.trim();
     const out = { 'qr-phone': '', 'qr-email': '' };
-    if (p && !/^[0-9\s+()-]{7,40}$/.test(p)) out['qr-phone'] = 'Ingresa un teléfono válido.';
+    if (p && window.PetAlert.phoneProblem(p)) out['qr-phone'] = window.PetAlert.phoneProblem(p);
     if (e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) out['qr-email'] = 'Ingresa un correo válido.';
     if (!p && !e) out['qr-phone'] = 'Deja un teléfono o un correo para que el dueño pueda contactarte.';
     return out;

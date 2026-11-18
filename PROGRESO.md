@@ -244,6 +244,12 @@
   - Límite real: OpenStreetMap ubica calles, no cruces exactos (en la prueba quedó en la Calle 72 a ~600 m de la carrera 11). Por eso se pide revisar el marcador.
   - Pruebas: 15/15 de anuncios (OpenStreetMap simulado) y 8/8 del navegador. Prueba real completa en celular con Gemini y OpenStreetMap: captura inventada → marcador en la Calle 72, Chapinero; no se mostró el nombre ni el teléfono de la captura.
 
+- **Error corregido: WhatsApp abría con "+35…" en vez de "+57…" (2026-11-18). ✅ Probado.**
+  - Causa: los formularios aceptaban cualquier número; el botón solo agregaba el 57 si tenía exactamente 10 dígitos. En Supabase había números con 9, 11 y 12 dígitos: WhatsApp leía el "3…" inicial como indicativo de otro país.
+  - Ahora el servidor (`normalize_phone` en `schemas.py`) acepta solo celulares/fijos colombianos de 10 dígitos (con o sin +57) o números de otro país que empiecen con "+", y los guarda como `+57 300 123 4567`. Los tres formularios usan la misma regla (`PetAlert.phoneProblem` en `sesion.js`) con el mensaje "Escribe un celular de 10 dígitos".
+  - Los números viejos mal escritos ya no generan enlaces a otro país: se muestran tal cual con el aviso "parece mal escrito".
+  - **78/78 pruebas pasan** (nuevo `test_telefonos.py`).
+
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.

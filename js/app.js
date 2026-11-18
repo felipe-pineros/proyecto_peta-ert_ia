@@ -624,13 +624,17 @@
       el('dt', { text: 'Correo' }), el('dd', { text: c.email || '—' }));
     const links = el('div', { class: 'btn-row', style: 'margin-top:10px;' });
     if (c.phone) {
-      const digits = c.phone.replace(/\D/g, '');
-      // Celular colombiano sin indicativo (10 dígitos que empiezan por 3) → se agrega el 57.
-      const wa = digits.length === 10 && digits[0] === '3' ? '57' + digits : digits;
+      // Indicativo correcto (+57 si es colombiano). Si el número quedó mal escrito (reportes
+      // viejos), no se arma un enlace a otro país: se muestra tal cual con un aviso.
+      const wa = window.PetAlert.whatsappNumber(c.phone);
       rows.append(el('dt', { text: 'Teléfono' }), el('dd', { text: c.phone }));
-      links.append(
-        el('a', { class: 'btn btn-primary btn-sm', href: 'tel:+' + wa, text: 'Llamar' }),
-        el('a', { class: 'btn btn-primary btn-sm', href: 'https://wa.me/' + wa, target: '_blank', rel: 'noopener', text: 'WhatsApp' }));
+      if (wa) {
+        links.append(
+          el('a', { class: 'btn btn-primary btn-sm', href: 'tel:+' + wa, text: 'Llamar' }),
+          el('a', { class: 'btn btn-primary btn-sm', href: 'https://wa.me/' + wa, target: '_blank', rel: 'noopener', text: 'WhatsApp' }));
+      } else {
+        rows.append(el('dt', { text: '' }), el('dd', { class: 'hint', text: 'Este número parece mal escrito (le sobra o le falta un dígito). Revísalo o escribe al correo.' }));
+      }
     } else if (c.has_phone) {
       links.append(el('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Ver teléfono', onclick: async (e) => {
         const done = busy(e.currentTarget, 'Cargando…');
@@ -961,7 +965,7 @@
       if (!eventAt.value) return fail('Indica la fecha.');
       if (new Date(eventAt.value) > new Date(Date.now() + 5 * 60000)) return fail('La fecha no puede estar en el futuro.');
       if (!location) return fail('Marca el lugar en el mapa.');
-      if (phone.value.trim() && !/^[0-9+()\-\s]{7,40}$/.test(phone.value.trim())) return fail('El teléfono no es válido.');
+      if (window.PetAlert.phoneProblem(phone.value)) return fail(window.PetAlert.phoneProblem(phone.value));
       if (email.value.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim())) return fail('El correo no es válido.');
       if (!editing) {
         if (files.length < 1) return fail('Agrega al menos una foto del animal.');

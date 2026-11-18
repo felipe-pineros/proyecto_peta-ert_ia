@@ -104,5 +104,23 @@
     return (config && config.features) || {};
   }
 
-  window.PetAlert = { getClient, getSession, api, ApiError, authMessage, isAnonymous, features };
+  // Teléfonos: mismas reglas que el servidor (backend/app/schemas.py, normalize_phone).
+  // Colombia: 10 dígitos (celular 3xx o fijo 60x), con o sin +57. Otro país: debe empezar con "+".
+  function phoneProblem(value) {
+    const v = (value || '').trim();
+    if (!v) return '';
+    if (!/^[0-9+()\-\s]+$/.test(v)) return 'El teléfono solo puede tener números, espacios, +, - y paréntesis.';
+    return whatsappNumber(v) ? '' : 'Escribe un celular de 10 dígitos, por ejemplo 300 123 4567.';
+  }
+  // Número para wa.me / tel: con el indicativo correcto, o null si el número está mal escrito
+  // (así nunca se arma un enlace a otro país, como pasaba con "+35…").
+  function whatsappNumber(value) {
+    const v = (value || '').trim();
+    let digits = v.replace(/\D/g, '');
+    if (v.startsWith('+') && !digits.startsWith('57')) return digits.length >= 8 && digits.length <= 15 ? digits : null;
+    if (digits.length === 12 && digits.startsWith('57')) digits = digits.slice(2);
+    return digits.length === 10 && /^[36]/.test(digits) ? '57' + digits : null;
+  }
+
+  window.PetAlert = { getClient, getSession, api, ApiError, authMessage, isAnonymous, features, phoneProblem, whatsappNumber };
 })();
