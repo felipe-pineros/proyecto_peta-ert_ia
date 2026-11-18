@@ -356,7 +356,18 @@ def test_confirmar_coincidencia_y_aviso(server, browser, users, state):
         assert api.post(f"/api/reports/{found['id']}/photos", headers=h,
                         files={"file": ("f.png", buf.getvalue(), "image/png")}).status_code == 201
         assert api.post(f"/api/reports/{found['id']}/publish", headers=h).status_code == 200
-    # El motor es de la etapa 7: la coincidencia se inserta a mano.
+    # Contra un servidor externo con IA activa (Docker/Render), el motor crea la coincidencia
+    # segundos después de publicar y pone su propio puntaje. Se espera a que termine para que
+    # no reemplace el puntaje fijo de abajo. Con la IA apagada (servidor local), no se espera.
+    if EXTERNAL_BASE:
+        for _ in range(40):
+            got = httpx.get(f"{URL}/rest/v1/matches", headers=admin_headers(), params={
+                "select": "id", "lost_report_id": f"eq.{state['ana_report']}",
+                "found_report_id": f"eq.{found['id']}"})
+            if got.is_success and got.json():
+                break
+            time.sleep(0.5)
+    # Puntaje fijo para poder comprobar el texto en pantalla (merge: sirve exista o no).
     r = httpx.post(f"{URL}/rest/v1/matches?on_conflict=lost_report_id,found_report_id",
                    headers=admin_headers() | {"Prefer": "return=representation,resolution=merge-duplicates"},
                    json={"lost_report_id": state["ana_report"], "found_report_id": found["id"],
