@@ -1,8 +1,8 @@
 """Descarga el modelo elegido y comprueba su huella SHA-256.
 
 Uso (desde la carpeta backend/):
-    .\\backend\\.venv\\Scripts\\python.exe -m app.ia.descargar            # el de IA_MODEL (dinov2_s)
-    .\\backend\\.venv\\Scripts\\python.exe -m app.ia.descargar dinov2_s_int8
+    .\\.venv\\Scripts\\python.exe -m app.ia.descargar            # el de IA_MODEL (dinov2_s)
+    .\\.venv\\Scripts\\python.exe -m app.ia.descargar dinov2_s_int8
 """
 import hashlib
 import sys

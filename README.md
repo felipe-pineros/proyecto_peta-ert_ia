@@ -7,9 +7,11 @@ mascotas **perdidas** o **encontradas** con fotos y ubicación, y el sistema sug
 - **Frontend:** `index.html` (página principal) y `app.html` (aplicación), en HTML, CSS y JavaScript sin framework.
 - **Backend:** Python + FastAPI (`backend/`). El mismo servidor entrega las páginas y la API.
 - **Base de datos, cuentas y fotos:** Supabase (PostgreSQL, Auth y Storage privado).
+- **IA:** DINOv2-S (Meta, Apache-2.0) con ONNX Runtime, en CPU, dentro del mismo backend. Saca la
+  "huella visual" de cada foto y sugiere posibles coincidencias perdida ↔ encontrada.
 
-> Estado actual: ver [PROGRESO.md](PROGRESO.md). El motor que **calcula** las coincidencias
-> con visión artificial todavía no está hecho (etapas 6 y 7).
+> Estado actual: ver [PROGRESO.md](PROGRESO.md). Publicado en https://proyecto-pet-alert.onrender.com.
+> Los avisos de nueva coincidencia son de la etapa 8.
 
 ---
 
@@ -42,6 +44,17 @@ python -m venv backend\.venv
 - `requirements.txt`: lo que necesita el servidor (~15 MB).
 - `requirements-dev.txt`: lo que necesitan las pruebas (~45 MB). Si solo vas a usar la app, puedes omitirlo.
 
+### 2.1.1 Descargar el modelo de IA (una vez, 84 MB)
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m app.ia.descargar
+cd ..
+```
+
+Lo guarda en `backend\modelos\` (git lo ignora) y comprueba su huella SHA-256. Sin el modelo, la app
+funciona igual pero no sugiere coincidencias. En Docker se descarga solo.
+
 ### 2.2 Configurar las claves de Supabase
 
 1. Copia la plantilla:
@@ -72,6 +85,7 @@ En **Supabase → SQL Editor**, ejecuta **en orden** el contenido de estos archi
 2. `supabase/migrations/20261023000002_seguridad_rls.sql`
 3. `supabase/migrations/20261023000003_storage.sql`
 4. `supabase/migrations/20261112000004_reporte_rapido_anonimo.sql` (reporte rápido sin cuenta)
+5. `supabase/migrations/20261117000005_motor_coincidencias.sql` (motor de coincidencias)
 
 ### 2.4 Configurar el inicio de sesión en Supabase
 
@@ -122,7 +136,7 @@ Qué debes saber:
   con las claves de `backend\.env`.
 - **Las claves no van dentro de la imagen.** Compose las entrega al encender (`env_file`), y
   `.dockerignore` impide que cualquier `.env` entre a la imagen.
-- La imagen pesa ~250 MB (Python 3.14 slim). Corre sin permisos de administrador y no lleva pruebas, fotos ni modelos de IA.
+- La imagen pesa ~630 MB (Python 3.14 slim + ONNX Runtime + el modelo DINOv2-S, que se descarga y verifica al construirla). Corre sin permisos de administrador y no lleva pruebas ni fotos. En uso llega a ~256 MB de memoria.
 - El contenedor escucha en el puerto que indique la variable `PORT` (8000 por defecto; Cloud Run usa la suya).
 - Si cambias código, vuelve a ejecutar `docker compose up --build -d`.
 
@@ -147,7 +161,14 @@ Remove-Item Env:PETALERT_BASE_URL
    sube de 1 a 5 fotos y presiona **Publicar reporte**.
 5. Con una **segunda cuenta** (otro correo, o una ventana de incógnito) verás ese reporte en **Explorar**.
 
-> Las coincidencias **todavía no aparecen solas**: el motor que las calcula llegará en las etapas 6 y 7.
+6. **Coincidencias:** con una cuenta publica una mascota **perdida** y con otra una **encontrada** de la
+   misma especie, cerca y con una foto del mismo animal. Unos segundos después, en el detalle del reporte
+   perdido aparece la **posible coincidencia** con su porcentaje de parecido. Solo el dueño de la perdida
+   puede confirmarla; cualquiera de los dos puede descartarla.
+
+> Cómo decide: compara las huellas visuales de las fotos y la distancia (`total = 0,75·visual + 0,25·cercanía`).
+> Solo sugiere si el parecido visual es ≥ 0,49, umbral provisional medido con 12 animales (etapa 6).
+> El sistema **nunca** afirma que es el mismo animal.
 
 ---
 
@@ -158,12 +179,13 @@ Remove-Item Env:PETALERT_BASE_URL
 ```
 
 Necesitan internet y `backend\.env`. Crean usuarios temporales en Supabase y **los borran al terminar**
-(con sus fotos). Hay 46 pruebas, más 4 de las métricas de IA en `evaluacion/`:
+(con sus fotos). Hay 53 pruebas, más 4 de las métricas de IA en `evaluacion/`:
 
 - `test_seguridad_supabase.py`: reglas de seguridad de la base de datos (RLS).
 - `test_api.py`: la API de punta a punta.
 - `test_reporte_anonimo.py`: el reporte rápido sin cuenta y los límites de los invitados.
 - `test_anuncios.py`: lectura de anuncios con Gemini (Gemini se simula: no gasta cuota).
+- `test_motor.py`: motor de coincidencias con el modelo real (necesita el modelo descargado y la migración 5).
 - `test_frontend_e2e.py`: la página en un navegador real (Edge).
 
 Si el modo invitado está desactivado en Supabase, las pruebas del reporte sin cuenta salen

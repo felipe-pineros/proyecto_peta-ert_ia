@@ -11,7 +11,7 @@
 | 4 | Backend CRUD | ✅ Completada (2026-11-10) |
 | 5 | Integración frontend | ✅ Completada (2026-11-10) |
 | 6 | Evaluación del modelo IA | 🔄 Primera medición con fotos reales (2026-11-17): gana DINOv2-S; falta ampliar la muestra |
-| 7 | Motor de coincidencias | ⏳ Pendiente |
+| 7 | Motor de coincidencias | ✅ Hecho y probado en local y Docker (2026-11-17); falta publicarlo en Render |
 | 8 | Notificaciones | ⏳ Pendiente |
 | 9 | Docker y documentación | 🔄 Docker listo y probado (2026-11-17), falta tu confirmación |
 | 10 | Preparación para la nube | ⏳ Pendiente |
@@ -159,11 +159,39 @@
     - el umbral de notificación aún no está calibrado (con 1 % de falsos positivos solo detecta el 31 %).
   - Memoria: con PyTorch, DINOv2-S llega a 549 MB, más que los 512 MB de Render Free. Para el motor (etapa 7) se propone exportarlo a ONNX Runtime.
 
+- **Etapa 7: motor de coincidencias (2026-11-17). ✅ Probado.**
+  - **Modelo:** DINOv2-S en ONNX Runtime 1.32 (MIT; 16 MB en Windows y 27 MB en Linux), sin PyTorch.
+    - El archivo es `onnx-community/dinov2-small`, con versión fija y SHA-256 verificado.
+    - `evaluacion/verificar_onnx.py` comprueba que da las mismas huellas que el modelo evaluado: similitud mínima de 0,9973 en las 37 fotos, mismo Recall@1 (86,5 %), AUC de 94,7 % y el mismo umbral.
+    - La versión int8 se probó y se descartó: Recall@1 de 83,8 % y no es más rápida.
+  - **Módulo `backend/app/ia/`:**
+    - el modelo se elige con `IA_MODEL` y se apaga con `IA_ENABLED=false`;
+    - `python -m app.ia.descargar` lo descarga en `backend/modelos/` (ignorado por git).
+  - **Migración 5** (aplicada por Daniela el 2026-11-17):
+    - `find_match_candidates` aplica los filtros (misma especie, perdida↔encontrada, ambos activos, personas distintas, fecha con 1 día de margen y 50 km o menos) y devuelve la mejor similitud entre fotos y la distancia aproximada;
+    - `save_match_suggestion` guarda sin duplicados y no toca las confirmadas ni las descartadas;
+    - ambas son solo para `service_role`.
+  - **`backend/app/motor.py`:**
+    - corre en segundo plano al publicar un reporte o al subir una foto a uno publicado;
+    - al encender, procesa las fotos que quedaron sin huella;
+    - `total = 0,75·visual + 0,25·exp(−km/5)`. Sugiere si visual ≥ 0,49 (`MATCH_MIN_SIMILARITY`), un valor **provisional** de la etapa 6;
+    - calcula una cosa a la vez, y si una foto se borró durante el cálculo, la salta.
+  - **Pruebas:**
+    - **7 pruebas nuevas** (`test_motor.py`, modelo real y Supabase real): mismo animal → sugiere (visual ≥ 0,9); otro animal → no; recalcular no duplica; las descartadas no reviven; filtros de distancia, especie, fecha y mismo usuario;
+    - las pruebas de confirmar y descartar apagan la IA (`conftest.py`), y la inserción manual tolera que la pareja ya exista;
+    - **57/57 pasan** (53 del backend + 4 de métricas).
+  - **Docker:**
+    - la imagen descarga y verifica el modelo al construirse y pesa 630 MB;
+    - arranca con "IA activa: dinov2_s";
+    - **memoria máxima: 256 MiB** con el motor trabajando (Render Free da 512 MB);
+    - las 7 pruebas del navegador pasan contra el contenedor con la IA activa, sin fallos del motor en los registros.
+  - **Hallazgo corregido:** si se borraba una foto mientras el motor la procesaba, el motor abandonaba todo el reporte. Ahora la salta.
+  - Pendiente: los avisos de `new_match` son de la etapa 8; ya está marcado dónde se crearán, en `motor.py`, cuando `is_new` es verdadero.
+
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
 - El registro real envía un correo de confirmación; el correo gratuito de Supabase permite muy pocos por hora (para la demo puede convenir configurar SMTP propio o desactivar la confirmación en Auth).
-- Las coincidencias aún no se crean solas: el motor es de la etapa 7. Hoy solo existen si se insertan a mano (así lo hacen las pruebas).
 - Las notificaciones de `new_match` las creará el motor (etapas 7–8).
 - Reporte sin cuenta:
   - el invitado no recibe avisos dentro de la app; el dueño lo contacta tras confirmar;
