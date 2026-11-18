@@ -115,11 +115,15 @@
 
     <form id="quick-form" novalidate>
       <details class="full qr-ad" id="qr-ad" hidden>
-        <summary>¿Lo viste en un anuncio de redes? Pega el texto y llenamos los datos</summary>
+        <summary>¿Lo viste en un anuncio de redes? Sube la captura o pega el texto y llenamos los datos</summary>
         <div class="qr-ad-body">
+          <label for="qr-ad-image">Captura del anuncio</label>
+          <input id="qr-ad-image" type="file" accept="image/jpeg,image/png,image/webp">
+          <span class="qr-hint qr-ad-warning">Antes de subirla, recorta si puedes los nombres, teléfonos y fotos de perfil: la captura se envía completa a la IA de Google (Gemini, plan gratuito, Google puede usarla). Le quitamos la ubicación GPS y no la guardamos.</span>
+          <span class="qr-or">o pega el texto</span>
           <label for="qr-ad-text">Texto del anuncio</label>
           <textarea id="qr-ad-text" maxlength="3000" placeholder="Pega aquí el texto de la publicación de Facebook, Instagram o WhatsApp…"></textarea>
-          <span class="qr-hint">Solo se envía el texto (nunca fotos) a la IA de Google (Gemini). Antes borramos teléfonos, correos y enlaces. Revisa siempre lo que entendió.</span>
+          <span class="qr-hint">Del texto borramos teléfonos, correos y enlaces antes de enviarlo a la IA de Google (Gemini). Revisa siempre lo que entendió.</span>
           <span class="field-error" id="err-qr-ad" hidden></span>
           <button type="button" class="qr-locate" id="qr-ad-btn">Leer anuncio</button>
           <div class="qr-ad-result" id="qr-ad-result" hidden></div>

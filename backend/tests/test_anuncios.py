@@ -157,3 +157,62 @@ def test_ruta_valida_texto_y_limita_usos(api, monkeypatch):
     for _ in range(anuncios_router.MAX_PER_HOUR):
         assert api.post("/api/ads/extract", json=body).json()["species"] == "dog"
     assert api.post("/api/ads/extract", json=body).status_code == 429
+
+
+# ---------------------------------------------------------------------------
+# Captura del anuncio (decisión de Daniela, 2026-11-18)
+# ---------------------------------------------------------------------------
+def captura_con_gps(width=3000, height=2000) -> bytes:
+    """Una 'captura' grande con metadatos EXIF (incluido GPS), como las de un celular."""
+    from io import BytesIO
+    from PIL import Image
+    img = Image.new("RGB", (width, height), (200, 160, 120))
+    exif = Image.Exif()
+    exif[0x010F] = "MarcaCelular"                       # fabricante
+    exif[0x8825] = {1: "N", 2: (4.0, 39.0, 0.0)}        # GPS
+    out = BytesIO()
+    img.save(out, format="JPEG", exif=exif.tobytes())
+    return out.getvalue()
+
+
+def test_extract_con_captura_envia_imagen_reducida_sin_metadatos(monkeypatch):
+    import base64
+    from io import BytesIO
+    from PIL import Image
+    from app.images import _normalize_image
+    original = captura_con_gps()
+    assert Image.open(BytesIO(original)).getexif()  # la original sí trae metadatos
+    clean = _normalize_image(original, "image/jpeg").data
+
+    client, seen = gemini_reply({"type": "found", "species": "dog", "color": "café",
+                                 "distinctive_features": "collar rojo, llamar al 300 123 4567",
+                                 "location_label": "Chapinero, escribir a ana@gmail.com"})
+    settings = replace(get_settings(), gemini_api_key="clave-de-prueba")
+    monkeypatch.setattr(anuncios, "get_settings", lambda: settings)
+    monkeypatch.setattr(supabase, "client", lambda: client)
+    data, _ = asyncio.run(anuncios.extract(image_jpeg=clean))
+
+    parts = seen["body"]["contents"][0]["parts"]
+    inline = [p["inlineData"] for p in parts if "inlineData" in p]
+    assert len(inline) == 1 and inline[0]["mimeType"] == "image/jpeg"
+    sent = Image.open(BytesIO(base64.b64decode(inline[0]["data"])))
+    assert max(sent.size) == anuncios.AI_IMAGE_MAX_SIDE      # reducida
+    assert not sent.getexif() and "exif" not in sent.info     # sin GPS ni fabricante
+    # La respuesta se limpia: si la IA copió un teléfono o un correo de la captura, se borra.
+    assert "300 123" not in data.distinctive_features and "collar rojo" in data.distinctive_features
+    assert "ana@gmail.com" not in data.location_label and "Chapinero" in data.location_label
+
+
+def test_ruta_captura_valida_imagen_y_comparte_limite(api, monkeypatch):
+    async def fake_extract(text=None, image_jpeg=None):
+        assert image_jpeg is None or image_jpeg[:2] == b"\xff\xd8"  # llega como JPEG limpio
+        return anuncios.AdData(type="found", species="cat"), 0
+    monkeypatch.setattr(anuncios, "extract", fake_extract)
+    no_es_imagen = api.post("/api/ads/extract-image", files={"file": ("a.png", b"hola", "image/png")})
+    assert no_es_imagen.status_code == 422
+    foto = {"file": ("captura.jpg", captura_con_gps(400, 300), "image/jpeg")}
+    for _ in range(anuncios_router.MAX_PER_HOUR - 1):
+        assert api.post("/api/ads/extract-image", files=foto).json()["species"] == "cat"
+    # Texto y capturas comparten el mismo cupo de 10 por hora.
+    assert api.post("/api/ads/extract", json={"text": "Se encontró un gato gris en Suba"}).status_code == 200
+    assert api.post("/api/ads/extract-image", files=foto).status_code == 429

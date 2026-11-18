@@ -284,12 +284,34 @@ def test_reporte_rapido_sin_cuenta(server, browser, photo_file):
                             "size": "small", "distinctive_features": "collar azul", "location_label": "Parque de Usaquén",
                             "event_date": None, "contact_data_removed": 1})
 
+    sent_images = []
+
+    def fake_extract_image(route):
+        sent_images.append(route.request.headers.get("content-type", ""))
+        route.fulfill(json={"type": "found", "species": "dog", "breed": None, "color": "negro",
+                            "size": "large", "distinctive_features": None, "location_label": None,
+                            "event_date": None, "contact_data_removed": 0})
+
     page.route("**/api/config", config_with_ai)
     page.route("**/api/ads/extract", fake_extract)
+    page.route("**/api/ads/extract-image", fake_extract_image)
     try:
         page.goto(BASE + "/#encontre")
         page.wait_for_selector("#qr-map.leaflet-container")
         page.click("#qr-ad summary")
+        # Captura del anuncio: primero sale el aviso; si se cancela, no se envía nada.
+        page.set_input_files("#qr-ad-image", str(photo_file))
+        page.once("dialog", lambda d: d.dismiss())
+        page.click("#qr-ad-btn")
+        page.wait_for_timeout(500)
+        assert sent_images == []
+        page.once("dialog", lambda d: (d.message.startswith("La captura se enviará COMPLETA") and d.accept()) or d.dismiss())
+        page.click("#qr-ad-btn")
+        page.wait_for_selector("#qr-ad-result:not([hidden]) >> text=negro")
+        assert len(sent_images) == 1 and sent_images[0].startswith("multipart/form-data")
+        assert page.is_checked("input[name='qr-species'][value='dog']")
+        page.set_input_files("#qr-ad-image", [])  # ahora se prueba con el texto
+        page.click("#qr-ad-result >> text=No usar estos datos")
         page.fill("#qr-ad-text", "Encontré gatito gris atigrado con collar azul en el Parque de Usaquén. Llamar 300 111 2222")
         page.click("#qr-ad-btn")
         page.wait_for_selector("#qr-ad-result:not([hidden]) >> text=gris atigrado")

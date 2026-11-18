@@ -64,6 +64,9 @@
 .qr-ad summary{cursor:pointer; padding:14px 16px; font-weight:600; font-size:0.9rem; color:var(--teal-dark);}
 .qr-ad-body{display:grid; gap:8px; padding:0 16px 16px;}
 .qr-ad-body .qr-locate{justify-self:start;}
+.qr-ad-body input[type=file]{font-size:0.86rem; max-width:100%;}
+.qr-ad-warning{color:#9a3412; background:rgba(231,111,81,0.1); border-radius:10px; padding:8px 10px;}
+.qr-or{display:block; text-align:center; font-size:0.8rem; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin:4px 0;}
 .qr-ad-result{background:var(--white); border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:0.88rem;}
 .qr-ad-result[hidden]{display:none;}
 .qr-ad-result dl{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:6px 0 10px;}

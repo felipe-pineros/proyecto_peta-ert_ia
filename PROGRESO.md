@@ -232,6 +232,11 @@
   - En la vista en lista, cada publicación tiene "Comentar / Comentarios (N)" y "Ver reporte": los comentarios se abren y se escriben ahí mismo, sin entrar al reporte. En la cuadrícula se muestra cuántos comentarios tiene.
   - `GET /api/reports` ahora trae `comment_count`. Pruebas: API y reporte sin cuenta pasan; 8/8 del navegador (Beto comenta desde Explorar). Captura en celular revisada.
 
+- **Leer anuncios desde una captura (2026-11-18), pedido por Daniela. ✅ Probado.**
+  - Nueva ruta `POST /api/ads/extract-image` y campo "Captura del anuncio" en el reporte rápido, con aviso y confirmación antes de enviar.
+  - Pruebas: 12/12 de anuncios (Gemini simulado: imagen reducida, sin EXIF/GPS, respuesta limpia de teléfonos y correos, cupo compartido) y 8/8 del navegador (cancelar el aviso no envía nada).
+  - **Prueba real con Google** con una captura inventada (sin datos reales): respondió en 6,8 s con perro, criolla, café con blanco, pequeña, collar rojo, Chapinero y la fecha; no devolvió el nombre ni el teléfono que se veían en la imagen.
+
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
@@ -259,7 +264,7 @@
 - D3: la ubicación se marca en un mapa (Leaflet + OpenStreetMap).
 - D4: máximo 5 fotos por reporte.
 - D5: reporte rápido de mascota encontrada sin cuenta (usuario anónimo de Supabase). Los invitados no ven reportes ajenos.
-- D6: leer el texto de anuncios de redes con Gemini (opcional, plan gratuito, solo texto y sin datos de contacto). Reconfirmado el 2026-11-18: no se envían fotos/capturas, porque los datos de contacto de una imagen no se pueden borrar antes de enviarla a Google.
+- D6: leer el texto de anuncios de redes con Gemini (opcional, plan gratuito, solo texto y sin datos de contacto). **Cambio del 2026-11-18 (Daniela):** también se puede subir una CAPTURA del anuncio, con aviso previo (pide recortar nombres, teléfonos y fotos de perfil, porque lo que se ve en la imagen no se puede borrar antes de enviarla). El servidor la recodifica sin metadatos (GPS) y la reduce a 1280 px; no se guarda. La respuesta de la IA se vuelve a limpiar de teléfonos y correos. Mismo límite: 10 lecturas por hora entre texto y capturas.
 
 ## Cómo verificar
 - Etapas 3, 4 y 5: `.\backend\.venv\Scripts\python.exe -m pytest backend\tests -v -rs` → deben pasar las 46 pruebas (necesita internet, `backend/.env` y Microsoft Edge). Si aparecen "skipped", falta activar el modo invitado o aplicar la migración 4.

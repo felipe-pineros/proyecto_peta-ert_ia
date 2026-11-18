@@ -227,6 +227,7 @@
   // para que la persona lo revise y se guarda en el reporte (color, tamaño, lugar, señas).
   const adBox = $('qr-ad');
   const adText = $('qr-ad-text');
+  const adImage = $('qr-ad-image');
   const adBtn = $('qr-ad-btn');
   const adResult = $('qr-ad-result');
   const SIZE_ES = { small: 'Pequeño', medium: 'Mediano', large: 'Grande' };
@@ -259,7 +260,7 @@
     row('Lugar', d.location_label);
     row('Fecha', d.event_date);
     if (dl.childElementCount) adResult.append(dl);
-    else adResult.append(add('p', 'No encontramos datos de la mascota en ese texto.'));
+    else adResult.append(add('p', 'No encontramos datos de la mascota en ese anuncio.'));
     if (d.type === 'lost') {
       adResult.append(add('p', 'Este anuncio parece de alguien que PERDIÓ su mascota. Publica aquí solo si tú la viste ' +
         'o la tienes; si no, compártele a esa persona el enlace de PetAlert.', 'warn'));
@@ -280,18 +281,31 @@
 
   adBtn.addEventListener('click', async () => {
     const text = adText.value.trim();
+    const shot = adImage && adImage.files[0];
     const errorEl = $('err-qr-ad');
     errorEl.hidden = true;
-    if (text.length < 15) {
-      errorEl.textContent = 'Pega el texto completo del anuncio.';
-      errorEl.hidden = false;
-      return;
+    const fail = (m) => { errorEl.textContent = m; errorEl.hidden = false; };
+    if (shot) {
+      if (!TYPES.includes(shot.type)) return fail('La captura debe ser JPEG, PNG o WebP.');
+      if (shot.size > MAX_BYTES) return fail('La captura pesa más de 10 MB.');
+      // Aviso (decisión de Daniela): lo que se ve en la imagen llega completo a Google.
+      if (!window.confirm('La captura se enviará COMPLETA a la IA de Google (Gemini, plan gratuito). ' +
+        'Si se ven nombres, teléfonos o fotos de perfil de otras personas, mejor recórtala antes.\n\n¿Enviarla?')) return;
+    } else if (text.length < 15) {
+      return fail('Sube la captura del anuncio o pega su texto completo.');
     }
     adBtn.disabled = true;
     adBtn.textContent = 'Leyendo…';
     try {
       await ensureSession();
-      const d = await api('/api/ads/extract', { method: 'POST', body: { text } });
+      let d;
+      if (shot) {
+        const fd = new FormData();
+        fd.append('file', shot);
+        d = await api('/api/ads/extract-image', { method: 'POST', form: fd });
+      } else {
+        d = await api('/api/ads/extract', { method: 'POST', body: { text } });
+      }
       adData = d;
       if (d.species === 'dog' || d.species === 'cat') {
         form.querySelector('input[name="qr-species"][value="' + d.species + '"]').checked = true;
