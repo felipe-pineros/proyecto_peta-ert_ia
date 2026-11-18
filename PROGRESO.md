@@ -1,6 +1,6 @@
 # Progreso — PET Alert
 
-Última actualización: 2026-11-17
+Última actualización: 2026-11-18
 
 ## Etapas
 | # | Etapa | Estado |
@@ -12,7 +12,7 @@
 | 5 | Integración frontend | ✅ Completada (2026-11-10) |
 | 6 | Evaluación del modelo IA | 🔄 Primera medición con fotos reales (2026-11-17): gana DINOv2-S; falta ampliar la muestra |
 | 7 | Motor de coincidencias | ✅ Hecho y probado en local y Docker (2026-11-17); falta publicarlo en Render |
-| 8 | Notificaciones | ⏳ Pendiente |
+| 8 | Notificaciones | 🔄 Avisos dentro de la app hechos y probados (2026-11-18), falta tu confirmación |
 | 9 | Docker y documentación | 🔄 Docker listo y probado (2026-11-17), falta tu confirmación |
 | 10 | Preparación para la nube | ⏳ Pendiente |
 
@@ -186,13 +186,29 @@
     - **memoria máxima: 256 MiB** con el motor trabajando (Render Free da 512 MB);
     - las 7 pruebas del navegador pasan contra el contenedor con la IA activa, sin fallos del motor en los registros.
   - **Hallazgo corregido:** si se borraba una foto mientras el motor la procesaba, el motor abandonaba todo el reporte. Ahora la salta.
-  - Pendiente: los avisos de `new_match` son de la etapa 8; ya está marcado dónde se crearán, en `motor.py`, cuando `is_new` es verdadero.
+  - ~~Pendiente: los avisos de `new_match`~~ → hechos en la etapa 8 (abajo).
+
+- **Etapa 8: avisos de coincidencias y contacto (2026-11-18). ✅ Probado, falta tu confirmación.**
+  - **Problema reportado por Daniela:** no salían avisos de coincidencias y no se sabía cómo contactar a quien vio el animal.
+  - **Causa:** el motor sí guardaba las coincidencias (había 2 en Supabase: similitud 1,0 y 0,81), pero nunca creaba el aviso `new_match` (tabla `notifications` vacía).
+  - **Arreglo en el backend (`motor.py`):**
+    - cada coincidencia sugerida crea un aviso para el dueño de la mascota perdida **y** para quien la encontró;
+    - sin duplicados: lo impide la restricción `UNIQUE (user_id, match_id, kind)`; recalcular no repite ni marca como no leído un aviso ya leído;
+    - al encender, el servidor repone los avisos de coincidencias guardadas antes de este arreglo (`notify_pending`). Ya se hizo en Supabase: 4 avisos para las 2 coincidencias.
+  - `GET /api/notifications` ahora dice si eres quien perdió o quien encontró (`my_role`) y la especie, para escribir un aviso claro.
+  - **Frontend (`js/app.js`):**
+    - textos de aviso según la persona ("¡Posible coincidencia! Encontraron un perro que se parece a tu mascota" / "El animal que encontraste se parece a…");
+    - al entrar o cuando llega un aviso nuevo aparece un mensaje en pantalla (no solo el número en "Avisos");
+    - en el reporte de otra persona hay un panel "¿Es tu mascota? Así contactas a quien la encontró", con los 3 pasos y un botón para reportar;
+    - en la coincidencia se explica que el contacto aparece al pulsar "Es mi mascota", y tras confirmar hay botones de Llamar, WhatsApp y correo.
+  - **Pruebas:** prueba nueva `test_avisa_a_las_dos_personas_sin_duplicar`; en `test_frontend_e2e.py` se precisaron 2 selectores porque cambió el texto. **58/58 pasan** (2026-11-18).
+  - **Falta en Render:** hacer **Manual Deploy** para que la versión publicada tenga el arreglo.
 
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.
 - El registro real envía un correo de confirmación; el correo gratuito de Supabase permite muy pocos por hora (para la demo puede convenir configurar SMTP propio o desactivar la confirmación en Auth).
-- Las notificaciones de `new_match` las creará el motor (etapas 7–8).
+- Avisos fuera de la app (correo o notificación del celular): no están hechos; hoy los avisos se ven al entrar a la app.
 - Reporte sin cuenta:
   - el invitado no recibe avisos dentro de la app; el dueño lo contacta tras confirmar;
   - falta CAPTCHA contra spam antes de la nube (etapa 10);

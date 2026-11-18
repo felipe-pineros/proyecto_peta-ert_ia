@@ -382,7 +382,7 @@ def test_confirmar_coincidencia_y_aviso(server, browser, users, state):
     page.wait_for_selector(".match-item >> text=Parecido 91 %")
     page.click(".match-item >> text=Ver detalle")
     page.wait_for_selector("text=No es una confirmación", timeout=30_000)
-    page.click("text=Es mi mascota")
+    page.click("button:has-text('Es mi mascota')")
     page.wait_for_selector(".contact-box >> text=+57 322 222 2222")
 
     # Beto ve el aviso, lo abre y encuentra el contacto de Ana.
@@ -391,6 +391,6 @@ def test_confirmar_coincidencia_y_aviso(server, browser, users, state):
     page2.wait_for_selector("#notif-badge:not([hidden])")
     assert page2.inner_text("#notif-badge") == "1"
     page2.click("[data-nav='notificaciones']")
-    page2.click(".notif-item >> text=Confirmaron una coincidencia")
+    page2.click(".notif-item >> text=El dueño confirmó que es su mascota")
     page2.wait_for_selector(".contact-box >> text=Prueba ana")
     assert errors == []
