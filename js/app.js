@@ -164,12 +164,59 @@
         el('p', { class: 'meta', text: (r.location_label || 'Ubicación en el mapa') + ' · ' + fmtDate(r.event_at) })));
   }
 
+  // Vista "lista": una publicación por fila, como en las redes sociales del celular.
+  function reportPost(r) {
+    return el('a', { class: 'report-post', href: '#reporte/' + r.id },
+      el('div', { class: 'post-head' },
+        el('span', { class: 'post-avatar post-avatar-' + r.type, 'aria-hidden': 'true', text: r.type === 'lost' ? '!' : '✓' }),
+        el('div', { class: 'post-head-text' },
+          el('strong', { text: reportTitle(r) }),
+          el('small', { text: (r.location_label || 'Ubicación en el mapa') + ' · ' + fmtDate(r.event_at) })),
+        el('div', { class: 'badges' }, badge(r.type, TYPE[r.type]), r.is_mine ? badge(r.status, STATUS[r.status]) : null)),
+      photoImg(firstPhoto(r), 'post-photo', 'Foto de ' + reportTitle(r)),
+      el('div', { class: 'post-body' },
+        el('p', { class: 'post-facts', text: [r.color, SIZE[r.size], r.breed].filter(Boolean).join(' · ') || speciesName(r.species) }),
+        r.distinctive_features ? el('p', { class: 'post-text', text: r.distinctive_features }) : null,
+        el('span', { class: 'post-cta', text: 'Ver reporte →' })));
+  }
+
+  // Cuadrícula o lista: la elección se recuerda en este navegador (si no se puede, cuadrícula).
+  const LAYOUT_KEY = 'petalert.vista';
+  function getLayout() {
+    try { return localStorage.getItem(LAYOUT_KEY) === 'list' ? 'list' : 'grid'; } catch (e) { return 'grid'; }
+  }
+  function setLayout(mode) { try { localStorage.setItem(LAYOUT_KEY, mode); } catch (e) { /* opcional */ } }
+
+  // Contenedor de reportes que se puede cambiar entre cuadrícula y lista sin volver a pedirlos.
+  function reportCollection() {
+    const rows = [];
+    let mode = getLayout();
+    const box = el('div');
+    const item = (r) => (mode === 'list' ? reportPost(r) : reportCard(r));
+    const paint = () => { box.className = mode === 'list' ? 'card-feed' : 'card-grid'; box.replaceChildren(...rows.map(item)); };
+    const buttons = [['grid', 'Cuadrícula', '▦'], ['list', 'Lista', '☰']].map(([value, label, icon]) =>
+      el('button', { type: 'button', class: 'layout-btn', 'data-layout': value, 'aria-pressed': String(mode === value), title: 'Ver en ' + label.toLowerCase(),
+        onclick: () => {
+          mode = value; setLayout(value);
+          buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.layout === value)));
+          paint();
+        } }, el('span', { 'aria-hidden': 'true', text: icon }), ' ' + label));
+    const toggle = el('div', { class: 'layout-toggle', role: 'group', 'aria-label': 'Forma de ver los reportes' }, buttons);
+    paint();
+    return {
+      box, toggle,
+      add(list) { rows.push(...list); box.append(...list.map(item)); },
+      clear() { rows.length = 0; box.replaceChildren(); },
+      get size() { return rows.length; },
+    };
+  }
+
   // -------------------------------------------------------------------------
   // Vista: explorar reportes activos
   // -------------------------------------------------------------------------
   async function viewExplore() {
     const state = { offset: 0 };
-    const grid = el('div', { class: 'card-grid' });
+    const reports = reportCollection();
     const emptyHolder = el('div');
     const typeSel = selectEl('f-type', [['', 'Perdidas y encontradas'], ['lost', 'Mascotas perdidas'], ['found', 'Mascotas encontradas']]);
     const spSel = selectEl('f-species', [['', 'Todas las especies'], ...speciesList.map((s) => [s.code, s.name_es])]);
@@ -178,15 +225,15 @@
     const more = el('button', { class: 'btn btn-outline', type: 'button', hidden: true, text: 'Ver más' });
 
     async function load(reset) {
-      if (reset) { state.offset = 0; grid.replaceChildren(); emptyHolder.replaceChildren(); }
+      if (reset) { state.offset = 0; reports.clear(); emptyHolder.replaceChildren(); }
       const params = new URLSearchParams({ limit: PAGE_SIZE, offset: state.offset });
       if (typeSel.value) params.set('type', typeSel.value);
       if (spSel.value) params.set('species', spSel.value);
       const rows = await api('/api/reports?' + params);
-      rows.forEach((r) => grid.append(reportCard(r)));
+      reports.add(rows);
       state.offset += rows.length;
       more.hidden = rows.length < PAGE_SIZE;
-      if (!grid.children.length) {
+      if (!reports.size) {
         emptyHolder.append(emptyBox('No hay reportes publicados con estos filtros.',
           el('a', { class: 'btn btn-primary', href: '#nuevo', text: 'Crear un reporte' })));
       }
@@ -199,8 +246,8 @@
 
     return el('section', null,
       viewHead('Explorar', 'Mascotas reportadas', 'Reportes publicados por la comunidad, del más reciente al más antiguo. La ubicación que ves es aproximada (~1 km).'),
-      el('div', { class: 'filters' }, typeSel, spSel),
-      grid, emptyHolder,
+      el('div', { class: 'filters' }, typeSel, spSel, reports.toggle),
+      reports.box, emptyHolder,
       el('div', { class: 'btn-row', style: 'justify-content:center; margin-top:24px;' }, more));
   }
 
@@ -210,10 +257,12 @@
   async function viewMine() {
     const rows = await api('/api/reports/mine');
     const newBtn = el('a', { class: 'btn btn-coral', href: '#nuevo', text: '+ Nuevo reporte' });
+    const reports = reportCollection();
+    reports.add(rows);
     return el('section', null,
       viewHead('Mis reportes', 'Tus reportes', 'Aquí ves todos tus reportes (también borradores y cerrados) y sus posibles coincidencias.', newBtn),
       rows.length
-        ? el('div', { class: 'card-grid' }, rows.map(reportCard))
+        ? el('div', null, el('div', { class: 'filters' }, reports.toggle), reports.box)
         : emptyBox('Todavía no has creado reportes.', el('a', { class: 'btn btn-primary', href: '#nuevo', text: 'Crear mi primer reporte' })));
   }
 

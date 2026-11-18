@@ -331,7 +331,11 @@ def test_otro_usuario_ve_el_reporte_sin_datos_privados(server, browser, users, s
     errors: list = []
     page = new_page(browser, errors)
     login(page, users["beto"])
-    page.wait_for_selector(f"a[href='#reporte/{state['ana_report']}']").click()
+    page.wait_for_selector(f".card-grid a[href='#reporte/{state['ana_report']}']")
+    # Cambia a la vista en lista (como en redes) y abre el reporte desde ahí.
+    page.click(".layout-btn[data-layout='list']")
+    assert page.get_attribute(".layout-btn[data-layout='list']", "aria-pressed") == "true"
+    page.wait_for_selector(f".card-feed a.report-post[href='#reporte/{state['ana_report']}']").click()
     page.wait_for_selector("#detail-map path.leaflet-interactive")  # círculo aproximado, no el punto
     assert page.query_selector("#detail-map .leaflet-marker-icon") is None
     assert "Tu contacto (privado)" not in page.content()

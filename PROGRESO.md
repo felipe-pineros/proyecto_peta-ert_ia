@@ -203,6 +203,10 @@
     - en la coincidencia se explica que el contacto aparece al pulsar "Es mi mascota", y tras confirmar hay botones de Llamar, WhatsApp y correo.
   - **Pruebas:** prueba nueva `test_avisa_a_las_dos_personas_sin_duplicar`; en `test_frontend_e2e.py` se precisaron 2 selectores porque cambió el texto. **58/58 pasan** (2026-11-18).
   - **Falta en Render:** hacer **Manual Deploy** para que la versión publicada tenga el arreglo.
+- **Vista en cuadrícula o en lista (2026-11-18), pedida por Daniela. ✅ Probado.**
+  - En "Explorar" y "Mis reportes", un selector "Cuadrícula / Lista". La lista muestra una publicación por fila, como en las redes del celular: encabezado con tipo, lugar y fecha, foto grande, datos y señas particulares.
+  - El navegador recuerda la elección (si no puede guardarla, usa cuadrícula).
+  - La prueba del navegador cambia a la lista y abre un reporte desde ahí: 7/7 pasan. Capturas revisadas en celular (390 px) y en computador, sin desplazamiento horizontal.
 
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
