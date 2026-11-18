@@ -32,6 +32,58 @@
   let picker = null;  // mapa (se crea cuando la sección se acerca a la pantalla)
   let previewUrl = null;
 
+  // ---------------------------------------------------------------- borrador
+  // En el celular, al abrir la cámara el navegador puede cerrar la página en segundo plano y,
+  // al volver, recargarla vacía. Se guarda lo escrito en ESTA pestaña (sessionStorage) para
+  // recuperarlo. Si el navegador no deja guardar, el formulario funciona igual.
+  const DRAFT_KEY = 'petalert.borrador.rapido';
+  const DRAFT_PHOTO_KEY = 'petalert.borrador.rapido.foto';
+  const draft = (() => { try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY)) || {}; } catch (e) { return {}; } })();
+  function saveDraft() {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        species: (form.querySelector('input[name="qr-species"]:checked') || {}).value,
+        phone: phone.value, email: email.value,
+        adText: ($('qr-ad-text') || {}).value || '',
+        point,
+      }));
+    } catch (e) { /* sin almacenamiento: no pasa nada */ }
+  }
+  function clearDraft() {
+    try { sessionStorage.removeItem(DRAFT_KEY); sessionStorage.removeItem(DRAFT_PHOTO_KEY); } catch (e) { /* nada */ }
+  }
+  // Copia reducida de la foto (máx. 1600 px, JPEG) para poder devolverla si la página se recarga.
+  function saveDraftPhoto(file) {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const data = canvas.toDataURL('image/jpeg', 0.85);
+        if (data.length < 3500000) sessionStorage.setItem(DRAFT_PHOTO_KEY, data);
+      } catch (e) { /* foto muy grande o sin almacenamiento */ }
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+  }
+  async function restoreDraftPhoto() {
+    let data = null;
+    try { data = sessionStorage.getItem(DRAFT_PHOTO_KEY); } catch (e) { return; }
+    if (!data || photoInput.files.length || typeof DataTransfer === 'undefined') return;
+    try {
+      const blob = await (await fetch(data)).blob();
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'foto.jpg', { type: 'image/jpeg' }));
+      photoInput.files = dt.files;
+      photoInput.dispatchEvent(new Event('change'));
+    } catch (e) { /* el navegador no permite devolver la foto: la persona la vuelve a elegir */ }
+  }
+
   // ---------------------------------------------------------------- mapa
   function initMap() {
     if (picker) return picker;
@@ -39,9 +91,10 @@
       setError('qr-map', 'No se pudo cargar el mapa. Revisa tu conexión y recarga la página.');
       return null;
     }
-    picker = window.PetMap.picker(mapEl, null, (p) => {
+    picker = window.PetMap.picker(mapEl, point, (p) => {
       point = p;
       setError('qr-map', '');
+      saveDraft();
     });
     return picker;
   }
@@ -75,11 +128,12 @@
     return '';
   }
 
-  photoInput.addEventListener('change', () => {
+  photoInput.addEventListener('change', (e) => {
     clearPreview();
     const error = photoError();
     setError('qr-photo', photoInput.files[0] ? error : '');
     if (error) return;
+    if (e.isTrusted) saveDraftPhoto(photoInput.files[0]);  // no al restaurarla nosotros mismos
     previewUrl = URL.createObjectURL(photoInput.files[0]);
     const img = document.createElement('img');
     img.className = 'preview';
@@ -297,6 +351,7 @@
       const published = await api('/api/reports/' + reportId + '/publish', { method: 'POST' });
       showShare(published, photoInput.files[0]);
 
+      clearDraft();
       form.querySelectorAll('input, button.qr-locate').forEach((f) => { f.disabled = true; });
       setLoading(true, 'Reporte publicado');
       showMessage('¡Gracias por ayudar! Publicamos el reporte. Si su familia la reportó como perdida, ' +
@@ -312,6 +367,7 @@
   });
 
   againBtn.addEventListener('click', () => {
+    clearDraft();
     form.reset();
     form.querySelectorAll('input, button.qr-locate').forEach((f) => { f.disabled = false; });
     clearPreview();
@@ -323,4 +379,20 @@
     photoInput.focus({ preventScroll: true });
     photoBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
+
+  // ---------------------------------------------------------------- recuperar borrador
+  if (/^[a-z_]{2,30}$/.test(draft.species || '')) {
+    const radio = form.querySelector('input[name="qr-species"][value="' + draft.species + '"]');
+    if (radio) radio.checked = true;
+  }
+  if (typeof draft.phone === 'string') phone.value = draft.phone;
+  if (typeof draft.email === 'string') email.value = draft.email;
+  if (typeof draft.adText === 'string' && adText) adText.value = draft.adText;
+  if (draft.point && Number.isFinite(draft.point.lat) && Number.isFinite(draft.point.lng)) {
+    point = { lat: draft.point.lat, lng: draft.point.lng };  // el mapa lo usa como punto inicial
+    if (picker) picker.set(point.lat, point.lng, true);
+  }
+  restoreDraftPhoto();
+  form.addEventListener('input', saveDraft);
+  form.addEventListener('change', saveDraft);
 })();

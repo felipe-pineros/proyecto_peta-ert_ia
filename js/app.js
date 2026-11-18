@@ -803,6 +803,7 @@
     const mapBox = el('div', { class: 'map-box', id: 'form-map' });
     const mapStatus = el('span', { class: 'hint', text: location ? 'Punto marcado.' : 'Haz clic en el mapa para marcar el lugar.' });
     let picker = null;
+    let saveDraft = () => {};  // se define abajo (solo para reportes nuevos)
     const locateBtn = el('button', { class: 'btn btn-outline btn-sm', type: 'button', text: 'Usar mi ubicación actual' });
     locateBtn.addEventListener('click', async () => {
       const done = busy(locateBtn, 'Buscando…');
@@ -813,6 +814,7 @@
       picker = window.PetMap.picker(mapBox, location, (p) => {
         location = p;
         mapStatus.textContent = 'Punto marcado. Puedes arrastrar el marcador para ajustarlo.';
+        saveDraft();
       });
     });
 
@@ -873,6 +875,41 @@
       el('div', { class: 'full' }, submit));
 
     syncPet();
+
+    // Borrador de un reporte NUEVO en esta pestaña (sessionStorage). En el celular, elegir fotos
+    // abre la cámara y el navegador puede recargar la página al volver; así no se pierde lo escrito.
+    // Las fotos no se guardan: se vuelven a elegir.
+    const DRAFT_KEY = 'petalert.borrador.reporte';
+    const textFields = { breed, color, features, eventAt, place, phone, email, petName };
+    let restoredNotice = null;
+    if (!editing) {
+      let d = null;
+      try { d = JSON.parse(sessionStorage.getItem(DRAFT_KEY)); } catch (e) { d = null; }
+      if (d && d.type === (typeFound.checked ? 'found' : 'lost')) {
+        if (pets.some((p) => p.id === d.pet)) petSel.value = d.pet;
+        if (speciesList.some((s) => s.code === d.species)) species.value = d.species;
+        if (['small', 'medium', 'large'].includes(d.size)) size.value = d.size;
+        syncPet();
+        Object.entries(textFields).forEach(([k, input]) => { if (typeof d[k] === 'string') input.value = d[k]; });
+        if (d.location && Number.isFinite(d.location.lat) && Number.isFinite(d.location.lng)) {
+          location = { lat: d.location.lat, lng: d.location.lng };
+          mapStatus.textContent = 'Punto marcado.';
+        }
+        restoredNotice = el('div', { class: 'notice', style: 'margin-bottom:16px; display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center;' },
+          el('span', { text: 'Recuperamos lo que habías escrito. Vuelve a elegir las fotos.' }),
+          el('button', { class: 'link', type: 'button', style: 'background:none; border:0; padding:0; font:inherit; cursor:pointer;', text: 'Empezar de nuevo', onclick: () => {
+            try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) { /* nada */ }
+            route();
+          } }));
+      }
+      saveDraft = () => {
+        const data = { type: typeFound.checked ? 'found' : 'lost', pet: petSel.value, species: species.value, size: size.value, location };
+        Object.entries(textFields).forEach(([k, input]) => { data[k] = input.value; });
+        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch (e) { /* sin almacenamiento */ }
+      };
+      form.addEventListener('input', saveDraft);
+      form.addEventListener('change', saveDraft);
+    }
 
     function fail(message) {
       errorBox.textContent = message;
@@ -940,6 +977,7 @@
         Object.keys(body).forEach((k) => { if (body[k] === null) delete body[k]; });
         const created = await api('/api/reports', { method: 'POST', body });
         reportId = created.id;
+        try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) { /* nada */ }  // ya quedó guardado
         await uploadPhotos(reportId, files, say);
         say('Publicando…');
         await api('/api/reports/' + reportId + '/publish', { method: 'POST' });
@@ -964,7 +1002,7 @@
       viewHead(editing ? 'Editar reporte' : 'Nuevo reporte',
         editing ? reportTitle(report) : 'Reportar una mascota',
         editing ? 'Las fotos se agregan o quitan desde la página del reporte.' : 'Completa los datos y sube fotos. Al publicar, buscaremos posibles coincidencias.'),
-      el('div', { style: 'max-width:820px;' }, form));
+      el('div', { style: 'max-width:820px;' }, restoredNotice, form));
   }
 
   // -------------------------------------------------------------------------

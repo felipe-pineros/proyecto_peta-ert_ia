@@ -222,6 +222,12 @@
   - **Falta en Render:** hacer **Manual Deploy** (la migración ya está aplicada).
   - Ojo: un teléfono escrito en un comentario lo ve cualquier persona con cuenta (la pantalla lo advierte). El dueño del reporte puede borrar el comentario.
 
+- **Error corregido: los formularios de "mascota encontrada" se reiniciaban (2026-11-18). ✅ Probado.**
+  - Reportado por Daniela. Se probaron en el navegador TODOS los botones de los dos formularios (portada y app), en celular y computador: ninguno borraba datos, salvo el enlace **"Leaflet"** de la esquina del mapa, que abría en la misma pestaña (un toque sin querer sacaba a la persona del formulario). Ahora abre en otra pestaña.
+  - Otra causa probable en celulares reales (no se puede reproducir en el navegador de pruebas): al abrir la cámara, Android puede cerrar la página en segundo plano y recargarla vacía.
+  - Solución: **borrador automático** en la pestaña (sessionStorage). Al recargar vuelven el texto, la especie, el punto del mapa y, en el reporte rápido, una copia reducida de la foto. En la app aparece "Recuperamos lo que habías escrito" con la opción "Empezar de nuevo". Se borra al publicar.
+  - Prueba nueva en el navegador (`test_formularios_no_se_pierden_al_recargar`): **8/8 pruebas del navegador pasan**.
+
 ## Pendiente
 - **Etapa 6:** ampliar la muestra a 15–30 animales, con más gatos y algunos animales de 1 sola foto como distractores, y volver a medir antes de fijar el umbral.
 - Recuperar contraseña ("olvidé mi contraseña") no está implementado todavía.

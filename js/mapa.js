@@ -10,6 +10,9 @@
   function baseMap(el, center, zoom) {
     const map = L.map(el, { scrollWheelZoom: false }).setView(center, zoom);
     L.tileLayer(TILES, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(map);
+    // El enlace "Leaflet" de la esquina abría en la MISMA pestaña: un toque sin querer en el
+    // celular sacaba a la persona del formulario y lo perdía. Ahora abre en otra pestaña.
+    map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
     // Si el mapa se creó dentro de algo oculto, recalcula su tamaño al mostrarse.
     setTimeout(() => map.invalidateSize(), 50);
     return map;

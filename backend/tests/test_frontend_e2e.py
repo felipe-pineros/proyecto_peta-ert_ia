@@ -210,6 +210,47 @@ def test_reporte_rapido_valida_en_el_navegador(server, browser):
     assert errors == []
 
 
+def test_formularios_no_se_pierden_al_recargar(server, browser, users, photo_file):
+    """En el celular, abrir la cámara puede hacer que el navegador recargue la página.
+    Lo escrito, el punto del mapa (y en el reporte rápido la foto) deben volver solos."""
+    errors: list = []
+    page = new_page(browser, errors)
+    # 1) Reporte rápido de la portada
+    page.goto(BASE + "/#encontre")
+    page.wait_for_selector("#qr-map.leaflet-container")
+    # El enlace "Leaflet" del mapa ya no saca a la persona del formulario.
+    assert page.get_attribute("#qr-map .leaflet-control-attribution a[href*='leafletjs']", "target") == "_blank"
+    page.set_input_files("#qr-photo", str(photo_file))
+    page.check("input[name='qr-species'][value='cat']", force=True)
+    page.click("#qr-map", position={"x": 120, "y": 90})
+    page.fill("#qr-phone", "300 111 2222")
+    page.wait_for_timeout(800)  # la copia reducida de la foto se guarda en segundo plano
+    page.reload()
+    page.wait_for_selector("#qr-map.leaflet-container")
+    page.wait_for_selector("#qr-photo-box img.preview")
+    assert page.input_value("#qr-phone") == "300 111 2222"
+    assert page.is_checked("input[name='qr-species'][value='cat']")
+    assert page.query_selector("#qr-map .leaflet-marker-icon") is not None
+    assert page.evaluate("document.getElementById('qr-photo').files.length") == 1
+
+    # 2) Formulario de la app (#nuevo/found)
+    login(page, users["beto"])
+    page.goto(f"{BASE}/app.html#nuevo/found")
+    page.wait_for_selector("#form-map.leaflet-container")
+    page.fill("#f-color", "negro con blanco")
+    page.fill("#f-place", "Parque de prueba")
+    page.click("#form-map", position={"x": 150, "y": 100})
+    page.reload()
+    page.wait_for_selector("text=Recuperamos lo que habías escrito")
+    assert page.input_value("#f-color") == "negro con blanco"
+    assert page.input_value("#f-place") == "Parque de prueba"
+    page.wait_for_selector("#form-map .leaflet-marker-icon")
+    # "Empezar de nuevo" borra el borrador.
+    page.click("text=Empezar de nuevo")
+    page.wait_for_function("document.getElementById('f-color') && document.getElementById('f-color').value === ''")
+    assert errors == []
+
+
 def anonymous_enabled() -> bool:
     r = httpx.get(f"{URL}/auth/v1/settings", headers={"apikey": PUBLISHABLE}, timeout=30)
     return bool(r.is_success and r.json().get("external", {}).get("anonymous_users"))
